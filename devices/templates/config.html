@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configure Device: {{ device.device_name }}</title>
+  <!-- Using Tailwind via CDN for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              light: '#e0f2fe',
+              DEFAULT: '#0ea5e9',
+              dark: '#0369a1',
+            },
+            secondary: {
+              light: '#f1f5f9',
+              DEFAULT: '#64748b',
+              dark: '#334155',
+            },
+            success: {
+              light: '#dcfce7',
+              DEFAULT: '#22c55e',
+              dark: '#15803d',
+            },
+            warning: {
+              light: '#fef9c3',
+              DEFAULT: '#eab308',
+              dark: '#a16207',
+            },
+            danger: {
+              light: '#fee2e2',
+              DEFAULT: '#ef4444',
+              dark: '#b91c1c',
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-in': 'slideIn 0.3s ease-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideIn: {
+              '0%': { transform: 'translateY(-10px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #22c55e;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+    .card {
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    .animate-slide-in {
+      animation: slideIn 0.3s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+  <nav class="bg-primary-dark text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <i class="fas fa-microchip text-2xl mr-2"></i>
+          <span class="font-bold text-xl">IoT Device Manager</span>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- Back Button -->
+          <a href="{% if request.GET.from == 'admin_dashboard' %}{% url 'admin_dashboard' %}
+          {% elif request.GET.from == 'device_admin_dashboard' %}{% url 'device_admin_dashboard' %}
+          {% else %}{% url 'user_dashboard' %}{% endif %}"
+    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+   <i class="fas fa-arrow-left mr-2"></i>
+   Back to Dashboard
+ </a>
+        
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div class="flex justify-between items-center mb-6 animate-fade-in">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Device Configuration</h1>
+        <p class="text-gray-600 mt-1">{{ device.device_name }} <span class="text-xs bg-primary-light text-primary-dark px-2 py-0.5 rounded-full">{{ device.device_id }}</span></p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+    {% if device.device_status == 'online' %}
+        bg-success-light text-success-dark
+    {% else %}
+        bg-danger-light text-danger-dark
+    {% endif %}
+">
+  <span class="h-2 w-2 rounded-full
+    {% if device.device_status == 'online' %}
+        bg-success
+    {% else %}
+        bg-danger
+    {% endif %}
+    mr-1"></span>
+  {{ device.device_status|default:'Unknown' }}
+</span>
+        
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Network Configuration Card -->
+        <form id="configForm" method="post" class="bg-white shadow-sm rounded-lg overflow-hidden card animate-slide-in">
+          {% csrf_token %}
+          
+          <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+            <div class="flex items-center">
+              <i class="fas fa-network-wired text-primary mr-2"></i>
+              <h2 class="text-lg font-medium text-gray-900">Network Configuration</h2>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">SSID</label>
+                <div class="relative rounded-md shadow-sm">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-wifi text-gray-400"></i>
+                  </div>
+                  <input type="text" name="ssid" value="{{ device.ssid|default:'' }}"
+                        class="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2" required>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <div class="relative rounded-md shadow-sm">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-lock text-gray-400"></i>
+                  </div>
+                  <input type="password" name="password"
+                        class="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2" required>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Static IP</label>
+                <div class="relative rounded-md shadow-sm">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-globe text-gray-400"></i>
+                  </div>
+                  <input type="text" name="static_ip" value="{{ device.static_ip|default:'' }}"
+                        class="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2" required>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pin Configuration -->
+          <div class="border-t border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+            <div class="flex items-center">
+              <i class="fas fa-microchip text-primary mr-2"></i>
+              <h2 class="text-lg font-medium text-gray-900">Pin Configuration</h2>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {% for pin in pins %}
+                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors duration-200">
+                  <div class="flex justify-between items-center mb-3">
+                    <label class="block text-sm font-medium text-gray-700">Pin {{ pin.pin_number }}</label>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      GPIO{{ pin.pin_number }}
+                    </span>
+                  </div>
+                  <input type="text" name="pin_{{ pin.pin_number }}_name" value="{{ pin.pin_name }}"
+                        class="focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md mb-2" placeholder="Custom name">
+                  <select name="pin_{{ pin.pin_number }}_mode"
+                          class="focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md">
+                    <option value="input"  {% if pin.mode == "input"  %}selected{% endif %}>Input</option>
+                    <option value="output" {% if pin.mode == "output" %}selected{% endif %}>Output</option>
+                  </select>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 flex justify-end space-x-3">
+            <button type="submit" name="action" value="save"
+                    class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200">
+              <i class="fas fa-save mr-2"></i> Save Configuration
+            </button>
+            <button type="submit" name="action" value="download"
+                    class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-success hover:bg-success-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-success transition-colors duration-200">
+              <i class="fas fa-download mr-2"></i> Download Code
+            </button>
+          </div>
+        </form>
+
+        <!-- Toggle Pins Section -->
+        <div class="bg-white shadow-sm rounded-lg overflow-hidden card animate-slide-in" style="animation-delay: 100ms;">
+          <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+            <div class="flex items-center">
+              <i class="fas fa-toggle-on text-primary mr-2"></i>
+              <h2 class="text-lg font-medium text-gray-900">Control Pins</h2>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {% for pin in toggle_pins %}
+                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors duration-200">
+                  <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm font-medium text-gray-700">{{ pin.pin_name }}</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      Pin {{ pin.pin_number }}
+                    </span>
+                  </div>
+                  
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-gray-500">Status:</span>
+                    <span id="pin-status-{{ pin.pin_number }}" 
+                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      {% if pin.mode == 'on' %}
+        bg-success-light text-success-dark
+      {% else %}
+        bg-gray-100 text-gray-800
+      {% endif %}">
+                      {{ pin.mode|default:'off'|title }}
+                    </span>
+                  </div>
+                  
+                  <div class="flex justify-between space-x-2">
+                    <button type="button"
+                            class="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-success hover:bg-success-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-success transition-colors duration-200"
+                            onclick="togglePinAction('{{ device.device_id }}', '{{ pin.pin_number }}', '{{ pin.pin_name|escapejs }}', 'on')">
+                      <i class="fas fa-power-off mr-1"></i> ON
+                    </button>
+                    <button type="button"
+                            class="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-danger hover:bg-danger-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger transition-colors duration-200"
+                            onclick="togglePinAction('{{ device.device_id }}', '{{ pin.pin_number }}', '{{ pin.pin_name|escapejs }}', 'off')">
+                      <i class="fas fa-power-off mr-1"></i> OFF
+                    </button>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="space-y-6">
+        <!-- Device Info Card -->
+        <div class="bg-white shadow-sm rounded-lg overflow-hidden card animate-slide-in" style="animation-delay: 150ms;">
+          <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+            <div class="flex items-center">
+              <i class="fas fa-info-circle text-primary mr-2"></i>
+              <h2 class="text-lg font-medium text-gray-900">Device Info</h2>
+            </div>
+          </div>
+          
+          <div class="p-6 space-y-4">
+            <div>
+              <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider">Device ID</h3>
+              <p class="mt-1 text-sm text-gray-900">{{ device.device_id }}</p>
+            </div>
+            <div>
+              <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider">Type</h3>
+              <p class="mt-1 text-sm text-gray-900">{{ device.device_type|default:'ESP Device' }}</p>
+            </div>
+            <div>
+              <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider">Firmware Version</h3>
+              <p class="mt-1 text-sm text-gray-900">{{ device.firmware_version|default:'1.0.0' }}</p>
+            </div>
+            <div>
+              <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider">Last Connection</h3>
+              <p class="mt-1 text-sm text-gray-900">{{ device.last_updated|date:"F j, Y, g:i a"|default:'Never' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggle Log Card -->
+        <div class="bg-white shadow-sm rounded-lg overflow-hidden card animate-slide-in" style="animation-delay: 200ms;">
+          <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+            <div class="flex items-center">
+              <i class="fas fa-history text-primary mr-2"></i>
+              <h2 class="text-lg font-medium text-gray-900">Activity Log</h2>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="max-h-96 overflow-y-auto">
+              <ul id="toggleLog" class="space-y-2">
+                {% if logs %}
+                  {% for log in logs %}
+                    <li class="text-sm border-l-4
+    {% if log.status == 'on' %}
+        border-success
+    {% else %}
+        border-danger
+    {% endif %}
+    pl-3 py-1">
+  <div class="flex justify-between">
+    <span>
+      <span class="font-medium">Pin {{ log.pin_number }}</span> was set to 
+      <span class="{% if log.status == 'on' %}text-success{% else %}text-danger{% endif %} font-medium">{{ log.status }}</span>
+    </span>
+    <span class="text-xs text-gray-500">{{ log.timestamp|date:"M d, H:i" }}</span>
+  </div>
+</li>
+                  {% endfor %}
+                {% else %}
+                  <li class="text-sm text-gray-500 italic">No activity recorded yet</li>
+                {% endif %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-gray-800 text-white mt-12">
+    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-sm">IoT Device Manager &copy; {{ 'now'|date:'Y' }}</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+            <i class="fas fa-question-circle"></i> Help
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+            <i class="fas fa-book"></i> Documentation
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+            <i class="fas fa-code"></i> API
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function togglePinAction(deviceId, pinNumber, pinName, action) {
+      const btn = event.currentTarget;
+      const originalText = btn.innerHTML;
+      const statusElement = document.getElementById('pin-status-' + pinNumber);
+  
+      // Get static IP from template
+      var staticIp = "{{ device.static_ip|default:'' }}";
+      if (!staticIp) {
+          alert("Device static IP is not set. Please configure the device's static IP first.");
+          return;
+      }
+  
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> ${action === 'on' ? 'Turning On...' : 'Turning Off...'}`;
+  
+      var label = pinName.toLowerCase().replace(/\s+/g, "");
+      var deviceEndpoint = "http://" + staticIp + ":1212/" + label + (action === 'on' ? "On" : "Off");
+      var backendEndpoint = `/devices/toggle-pin/${deviceId}/${pinNumber}/`;
+      
+      console.log("Device ID:", deviceId);
+      console.log("Pin Number:", pinNumber);
+      console.log("Pin Name:", pinName);
+      console.log("Action:", action);
+      console.log("Toggling pin", pinNumber, "via device URL:", deviceEndpoint);
+      console.log("Logging toggle to backend URL:", backendEndpoint);
+      
+      // Function to get CSRF token
+      function getCSRFToken() {
+          const token = document.querySelector('[name=csrfmiddlewaretoken]');
+          return token ? token.value : '{{ csrf_token }}';
+      }
+      
+      // First send command to the device
+      fetch(deviceEndpoint, {
+          method: 'GET',
+          mode: 'no-cors' // Add this for cross-origin requests to device
+      })
+      .then(response => {
+          console.log("Device endpoint response status:", response.status);
+          // Note: with no-cors mode, we can't read the response, but the request is sent
+          
+          // Now log the toggle in the backend database
+          return fetch(backendEndpoint, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': getCSRFToken(),
+                  'Accept': 'application/json'
+              },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                  action: action,
+                  pin_name: pinName
+              })
+          });
+      })
+      .then(response => {
+          console.log("Backend response status:", response.status);
+          
+          if (!response.ok) {
+              throw new Error(`Backend request failed with status: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then(data => {
+          // Update UI to reflect new state
+          if (statusElement) {
+              statusElement.textContent = action.toUpperCase();
+              statusElement.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  action === 'on' ? 'bg-success-light text-success-dark' : 'bg-gray-100 text-gray-800'
+              }`;
+          }
+          
+          // Show success notification
+          showNotification('success', `Pin ${pinNumber} turned ${action}`);
+      })
+      .catch(error => {
+          console.error('Error toggling pin:', error);
+          showNotification('error', `Failed to toggle pin: ${error.message}`);
+      })
+      .finally(() => {
+          // Reset button state
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+      });
+  }
+
+  // Function to add entry to toggle log
+function addToToggleLog(pinNumber, action, timestamp) {
+  const toggleLog = document.getElementById('toggleLog');
+  if (!toggleLog) return;
+  
+  const timeString = timestamp || new Date().toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+  });
+  
+  const newLogItem = document.createElement('li');
+  newLogItem.className = `text-sm border-l-4 ${
+      action === 'on' ? 'border-success' : 'border-danger'
+  } pl-3 py-1 animate-fade-in`;
+  
+  newLogItem.innerHTML = `
+      <div class="flex justify-between">
+          <span>
+              <span class="font-medium">Pin ${pinNumber}</span> was set to 
+              <span class="${action === 'on' ? 'text-success' : 'text-danger'} font-medium">${action}</span>
+          </span>
+          <span class="text-xs text-gray-500">${timeString}</span>
+      </div>
+  `;
+  
+  // Add to the top of the list
+  if (toggleLog.firstChild) {
+      toggleLog.insertBefore(newLogItem, toggleLog.firstChild);
+  } else {
+      toggleLog.appendChild(newLogItem);
+  }
+  
+  // Remove "No activity" message if it exists
+  const noActivityMsg = toggleLog.querySelector('.italic');
+  if (noActivityMsg) {
+      noActivityMsg.remove();
+  }
+}
+
+// Function to show notifications
+function showNotification(type, message) {
+  const notification = document.createElement('div');
+  const bgColor = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-primary';
+  
+  notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white ${bgColor} z-50`;
+  notification.innerHTML = `
+      <div class="flex items-center">
+          <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+          <span>${message}</span>
+      </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Remove notification after 3 seconds
+  setTimeout(() => {
+      notification.remove();
+  }, 3000);
+}
+
+    // Add form submission feedback
+    document.getElementById('configForm').addEventListener('submit', function(e) {
+      const submitButtons = this.querySelectorAll('button[type="submit"]');
+      submitButtons.forEach(btn => {
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Processing...`;
+        
+        // Re-enable after 5 seconds in case of navigation issues
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }, 5000);
+      });
+    });
+  </script>
+</body>
+</html>

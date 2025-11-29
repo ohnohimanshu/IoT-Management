@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .status { font-weight: bold; }
+        .readings { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h2>Device Status Update: {{ device_name }}</h2>
+    <p class="status">Current Status: {{ device_status }}</p>
+    <p>Last Seen: {{ last_seen }}</p>
+    
+    <div class="readings">
+        <h3>Sensor Readings:</h3>
+        {% if temperature is not None %}
+            <p>Temperature: {{ temperature }}°C</p>
+        {% endif %}
+        {% if humidity is not None %}
+            <p>Humidity: {{ humidity }}%</p>
+        {% endif %}
+        
+        {% if other_sensors %}
+            <h4>Additional Sensors:</h4>
+            {% for key, value in other_sensors.items %}
+                <p>{{ key|title }}: {{ value }}</p>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+    <p>Reading Time: {{ timestamp }}</p>
+</body>
+</html>

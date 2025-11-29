@@ -1,0 +1,715 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}User Dashboard{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.0"></script>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            light: '#e0f2fe',
+                            DEFAULT: '#0ea5e9',
+                            dark: '#0369a1',
+                        },
+                        secondary: {
+                            light: '#f1f5f9',
+                            DEFAULT: '#64748b',
+                            dark: '#334155',
+                        },
+                        success: {
+                            light: '#dcfce7',
+                            DEFAULT: '#22c55e',
+                            dark: '#15803d',
+                        },
+                        warning: {
+                            light: '#fef9c3',
+                            DEFAULT: '#eab308',
+                            dark: '#a16207',
+                        },
+                        danger: {
+                            light: '#fee2e2',
+                            DEFAULT: '#ef4444',
+                            dark: '#b91c1c',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Animation Classes */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes slideIn {
+            0% { transform: translateY(-10px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Card Hover Effects */
+        .card {
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            margin-top: 2rem;
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            transition: all 0.3s ease;
+        }
+        .status-badge:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Button Hover Effects */
+        .btn-effect {
+            transition: all 0.3s ease;
+        }
+        .btn-effect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        /* Active Navigation Item */
+        .nav-item.active {
+            border-left: 4px solid #0ea5e9;
+            background-color: rgba(14, 165, 233, 0.1);
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex flex-col md:flex-row w-full min-h-screen">
+        <!-- Left Bar Navigation -->
+        <div class="w-full md:w-64 bg-gray-800 text-white shadow-lg z-10">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8">
+                    <i class="fas fa-tachometer-alt text-2xl text-primary"></i>
+                    <h1 class="text-xl font-bold">IoT Dashboard</h1>
+                </div>
+                <nav class="mt-2">
+                    <ul class="space-y-2">
+                        <li class="nav-item active">
+                            <button id="myDevicesBtn" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-700 btn-effect">
+                                <i class="fas fa-microchip mr-3 text-primary"></i>
+                                <span>My Devices</span>
+                            </button>
+                        </li>
+                       
+                        <li class="nav-item">
+                            <button id="alertsBtn" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-700 btn-effect">
+                                <i class="fas fa-bell mr-3 text-primary"></i>
+                                <span>Alerts</span>
+                                {% if alerts %}
+                                <span class="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-danger rounded-full">{{ alerts|length }}</span>
+                                {% endif %}
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button id="settingsBtn" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-700 btn-effect">
+                                <i class="fas fa-cog mr-3 text-primary"></i>
+                                <span>Control-Devices</span>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+                
+                <div class="mt-10 pt-6 border-t border-gray-700">
+                    <div class="flex items-center px-4 py-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-circle text-2xl text-gray-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium">{{ user.username }}</p>
+                            <p class="text-xs text-gray-400">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <a href="/logout/" class="mt-2 flex items-center px-4 py-3 text-sm font-medium text-gray-400 rounded-md hover:bg-gray-700 hover:text-white btn-effect">
+                        <i class="fas fa-sign-out-alt mr-3"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-auto p-6 md:p-8 bg-gray-50">
+            <div class="max-w-7xl mx-auto">
+            <h1 class="text-4xl font-bold text-center text-indigo-600 mb-8">User Dashboard</h1>
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+            <!-- Overview Section -->
+            <div id="overview" class="mb-8 animate-fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md hover-shadow transition-all duration-300 transform hover:-translate-y-1 overflow-hidden relative">
+                        <div class="flex items-center">
+                            <div class="rounded-full bg-primary-light p-3 mr-4">
+                                <i class="fas fa-microchip text-primary text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Total Devices</h3>
+                                <p class="text-2xl font-bold text-gray-800">{{ total_devices }}</p>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-md hover-shadow transition-all duration-300 transform hover:-translate-y-1 overflow-hidden relative">
+                        <div class="flex items-center">
+                            <div class="rounded-full bg-success-light p-3 mr-4">
+                                <i class="fas fa-check-circle text-success text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Active Devices</h3>
+                                <p class="text-2xl font-bold text-gray-800">{{ active_devices }}</p>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-success"></div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-md hover-shadow transition-all duration-300 transform hover:-translate-y-1 overflow-hidden relative">
+                        <div class="flex items-center">
+                            <div class="rounded-full bg-warning-light p-3 mr-4">
+                                <i class="fas fa-exclamation-triangle text-warning text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Alerts</h3>
+                                <p class="text-2xl font-bold text-gray-800">{{ alerts|length }}</p>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-warning"></div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-md hover-shadow transition-all duration-300 transform hover:-translate-y-1 overflow-hidden relative">
+                        <div class="flex items-center">
+                            <div class="rounded-full bg-info-light p-3 mr-4">
+                                <i class="fas fa-sync text-info text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Last Update</h3>
+                                <p class="text-sm font-bold text-gray-800">{{ last_update|default:'Just now' }}</p>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-info"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Devices Section -->
+            <div id="myDevicesSection" class="bg-white shadow rounded-lg p-6 mb-8 animate-fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-800">My Devices</h2>
+                    <div class="flex space-x-2">
+                        <button class="flex items-center px-3 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors btn-effect">
+                            <i class="fas fa-plus-circle mr-2"></i>
+                            <span>Add Device</span>
+                        </button>
+                        <button class="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors btn-effect">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3">Device Name</th>
+                                <th class="px-6 py-3">Device ID</th>
+                                <th class="px-6 py-3">Status</th>
+                                <th class="px-6 py-3">Last Updated</th>
+                                <th class="px-6 py-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            {% for device in user_devices %}
+                            
+                            <tr class="hover:bg-gray-100 animate-fade-in" style="animation-delay: {{ forloop.counter0|multiply:100 }}ms">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-primary-light text-primary">
+                                            <i class="fas fa-microchip"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">{{ device.device_name }}</div>
+                                            <div class="text-xs text-gray-500">{{ device.type|default:'ESP Device' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">{{ device.device_id }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="
+                                        {% if device.device_status == 'online' %}
+                                            bg-success-light text-success-dark
+                                        {% else %}
+                                            bg-danger-light text-danger-dark
+                                        {% endif %}
+                                        px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge
+                                    ">
+                                        {{ device.device_status|capfirst }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-clock text-gray-400 mr-2"></i>
+                                        <span>{{ device.last_updated|default:"Never" }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex space-x-2">
+                                        <a href="{% url 'device_data' device.device_id %}?from=user_dashboard" class="text-indigo-600 hover:text-indigo-900 btn-effect">
+                                            <i class="fas fa-chart-line mr-1"></i>View Data
+                                        </a>
+                                        <button onclick="toggleDeviceStatus('{{ device.device_id }}')" class="text-blue-600 hover:text-blue-900 btn-effect">
+                                            <i class="fas fa-power-off mr-1"></i>Toggle Status
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-microchip text-4xl text-gray-300 mb-3"></i>
+                                        <p class="text-lg font-medium">No devices assigned to you yet.</p>
+                                        <p class="text-sm">Add a new device to get started</p>
+                                        <button class="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors btn-effect">
+                                            <i class="fas fa-plus-circle mr-2"></i>
+                                            <span>Add Device</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+          
+
+            <!-- Alerts Section -->
+            <div id="alertsSection" class="hidden bg-white shadow rounded-lg p-6 mb-8 animate-fade-in">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Your Alerts</h2>
+                <div class="space-y-4">
+                    {% for alert in alerts %}
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full 
+                                    {% if alert.severity == 'high' %}bg-red-100 text-red-600
+                                    {% elif alert.severity == 'medium' %}bg-yellow-100 text-yellow-600
+                                    {% else %}bg-blue-100 text-blue-600{% endif %}">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="text-sm font-medium text-gray-900">{{ alert.title }}</h4>
+                                    <p class="text-xs text-gray-500">{{ alert.timestamp|timesince }} ago</p>
+                                </div>
+                            </div>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if alert.severity == 'high' %}bg-red-100 text-red-800
+                                {% elif alert.severity == 'medium' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ alert.severity|title }}
+                            </span>
+                        </div>
+                        <p class="text-gray-700 mt-2">{{ alert.message }}</p>
+                        {% if alert.device_id %}
+                        <div class="mt-3 flex items-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <i class="fas fa-microchip mr-1"></i> {{ alert.device_id }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="py-10 text-center text-gray-500">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-bell-slash text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-lg font-medium">No alerts at this time</p>
+                            <p class="text-sm">You're all caught up!</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settingsSection" class="hidden bg-white shadow rounded-lg p-6 mb-8 animate-fade-in">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Control Your ESP Devices</h2>
+                
+               
+                <!-- Device Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for device in esp_devices %}
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 animate-fade-in">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-primary-light text-primary">
+                                    <i class="fas fa-microchip"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="text-sm font-medium text-gray-900">{{ device.device_name }}</h4>
+                                    <p class="text-xs text-gray-500">{{ device.device_id }}</p>
+                                </div>
+                            </div>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if device.device_status == 'online' %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ device.device_status|title }}
+                            </span>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="btn-primary btn-sm flex-1 animate-scale" onclick="window.location.href='{% url 'device_config' device.device_id %}?from={{ request.GET.from|default:'user_dashboard' }}'">
+                                <i class="fas fa-cog mr-1"></i> Configure
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-microchip text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-lg font-medium text-gray-500">No ESP devices found</p>
+                        <p class="text-sm text-gray-400">Add a new device to get started</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+               
+            </div>
+          
+        </div>
+    </div>
+
+<script>
+// Navigation between sections
+document.addEventListener("DOMContentLoaded", function () {
+    // Handle navigation
+    const sections = {
+        myDevicesBtn: "myDevicesSection",
+        deviceDataBtn: "deviceDataSection",
+        alertsBtn: "alertsSection",
+        settingsBtn: "settingsSection" // Make sure this line exists
+    };
+
+    Object.keys(sections).forEach((btnId) => {
+        document.getElementById(btnId)?.addEventListener("click", () => {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked nav item
+            document.getElementById(btnId).closest('.nav-item').classList.add('active');
+            
+            // Hide all sections and show the selected one
+            Object.values(sections).forEach((sec) => document.getElementById(sec)?.classList.add("hidden"));
+            document.getElementById(sections[btnId])?.classList.remove("hidden");
+        });
+    });
+
+    // Initialize dashboard
+    // Show My Devices section by default
+    document.getElementById('myDevicesSection').classList.remove('hidden');
+    document.querySelector('.nav-item').classList.add('active');
+
+    // Initialize chart
+    initializeChart();
+    
+    // Setup additional event listeners
+    setupEventListeners();
+    
+    // Add animation classes to elements
+    addAnimations();
+});
+
+
+function setupEventListeners() {
+    // Device selector change event
+    const deviceSelector = document.getElementById('deviceSelector');
+    if (deviceSelector) {
+        deviceSelector.addEventListener('change', function() {
+            var deviceId = this.value;
+            if (deviceId) {
+                fetchDeviceData(deviceId);
+            }
+        });
+    }
+
+    // Settings form submission
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+            
+            // Show saving indicator
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Saving...</span>';
+            submitBtn.disabled = true;
+            
+            fetch("{% url 'update_user_settings' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                },
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i><span>Saved!</span>';
+                    submitBtn.classList.add('bg-success');
+                } else {
+                    submitBtn.innerHTML = '<i class="fas fa-times mr-2"></i><span>Error!</span>';
+                    submitBtn.classList.add('bg-danger');
+                    alert("Error updating settings: " + data.error);
+                }
+                
+                // Reset button after delay
+                setTimeout(function() {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('bg-success', 'bg-danger');
+                }, 2000);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                submitBtn.innerHTML = '<i class="fas fa-times mr-2"></i><span>Error!</span>';
+                submitBtn.classList.add('bg-danger');
+                
+                // Reset button after delay
+                setTimeout(function() {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('bg-danger');
+                }, 2000);
+            });
+        });
+    }
+  
+   
+    // Alert filter buttons
+    document.querySelectorAll('.alert-filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.alert-filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.getAttribute('data-filter');
+            filterAlerts(filter);
+        });
+    });
+    
+    // Toggle checkbox styling
+    document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const label = this.nextElementSibling;
+            if (this.checked) {
+                label.classList.add('bg-primary');
+                label.classList.remove('bg-gray-300');
+            } else {
+                label.classList.remove('bg-primary');
+                label.classList.add('bg-gray-300');
+            }
+        });
+        
+        // Initialize toggle state
+        if (checkbox.checked) {
+            checkbox.nextElementSibling.classList.add('bg-primary');
+            checkbox.nextElementSibling.classList.remove('bg-gray-300');
+        }
+    });
+}
+
+function filterAlerts(filter) {
+    const alerts = document.querySelectorAll('.alert-item');
+    let visibleCount = 0;
+    
+    alerts.forEach(alert => {
+        const severity = alert.getAttribute('data-severity');
+        if (filter === 'all' || severity === filter) {
+            alert.style.display = 'block';
+            visibleCount++;
+        } else {
+            alert.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('alertCount').textContent = visibleCount;
+}
+
+function addAnimations() {
+    // Add staggered animations to cards in overview section
+    const overviewCards = document.querySelectorAll('#overview .grid > div');
+    overviewCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 100}ms`;
+    });
+}
+
+function fetchDeviceData(deviceId) {
+    // Show loading state
+    document.getElementById('dataChart').innerHTML = '<div class="flex justify-center items-center h-full"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i></div>';
+    document.getElementById('dataTable').innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center"><i class="fas fa-spinner fa-spin mr-2"></i> Loading data...</td></tr>';
+    
+    // Fetch data from API
+    fetch(`/api/device-data/${deviceId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Reinitialize chart with the new data
+            updateChart(data);
+            
+            // Update data table
+            updateDataTable(data);
+        })
+        .catch(error => {
+            console.error("Error fetching device data:", error);
+            // Show error message
+            document.getElementById('dataChart').innerHTML = '<div class="flex justify-center items-center h-full text-danger"><i class="fas fa-exclamation-circle mr-2"></i> Error loading data</div>';
+            document.getElementById('dataTable').innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-danger"><i class="fas fa-exclamation-circle mr-2"></i> Error loading data</td></tr>';
+            
+            // Fallback to demo data after a delay
+            setTimeout(() => {
+                initializeChart();
+                generateDummyTableData();
+            }, 2000);
+        });
+}
+
+function updateChart(data) {
+    // Implementation for updating the chart with device data
+    // This will depend on your specific charting library and data structure
+    // For now, just reinitialize with demo data
+    initializeChart();
+}
+
+function toggleDeviceStatus(deviceId) {
+    const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+    
+    // Find the button that was clicked
+    const buttons = document.querySelectorAll(`button[onclick="toggleDeviceStatus('${deviceId}')"`);
+    if (buttons.length > 0) {
+        const button = buttons[0];
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+    }
+    
+    fetch(`/api/device/${deviceId}/toggle-status/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-success text-white px-4 py-2 rounded-md shadow-lg animate-fade-in z-50';
+            toast.innerHTML = `<div class="flex items-center"><i class="fas fa-check-circle mr-2"></i> Device status toggled successfully</div>`;
+            document.body.appendChild(toast);
+            
+            // Remove toast after delay
+            setTimeout(() => toast.remove(), 3000);
+            
+            // Reload page to reflect changes
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert("Error toggling device status: " + data.error);
+            // Reset button state
+            if (buttons.length > 0) {
+                const button = buttons[0];
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Error toggling device status. Please try again.");
+        // Reset button state
+        if (buttons.length > 0) {
+            const button = buttons[0];
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    });
+}
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetchCommandHistory();
+    
+    // Refresh command history every 30 seconds
+    setInterval(fetchCommandHistory, 30000);
+});
+</script>
+</body>
+</html>

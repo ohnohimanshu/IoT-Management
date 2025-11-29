@@ -1,0 +1,75 @@
+# ==========================
+# Django and Database
+# ==========================
+Django>=3.2,<4.0             # LTS version compatible with djongo
+djongo==1.3.6                # MongoDB connector for Django
+pymongo==3.12.3              # Specific version for djongo compatibility
+dnspython                    # Required by pymongo for SRV URIs
+
+# ==========================
+# REST Framework and API
+# ==========================
+djangorestframework
+django-filter
+drf-yasg                     # API documentation
+markdown
+
+# ==========================
+# Authentication and Security
+# ==========================
+django-allauth               # User registration
+djangorestframework-simplejwt
+python-jose                  # JWT handling
+python-dotenv                # Environment variables
+
+# ==========================
+# Frontend
+# ==========================
+django-tailwind
+django-crispy-forms
+crispy-tailwind             # Tailwind for crispy-forms
+
+# ==========================
+# Background Tasks & Messaging
+# ==========================
+celery
+redis                        # Redis for Celery
+django-celery-beat
+django-celery-results
+paho-mqtt
+
+# ==========================
+# Data Visualization
+# ==========================
+matplotlib
+seaborn
+numpy
+pandas
+plotly
+kaleido                     # For static image export
+
+# ==========================
+# Testing and Development
+# ==========================
+pytest
+pytest-django
+coverage
+black
+flake8
+
+# ==========================
+# Monitoring and Debugging
+# ==========================
+sentry-sdk
+django-debug-toolbar
+
+# ==========================
+# Utilities
+# ==========================
+pillow                      # Image handling
+requests                    # HTTP requests
+python-dateutil
+pytz
+gunicorn
+ollama
+channels

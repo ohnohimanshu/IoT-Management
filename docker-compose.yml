@@ -1,0 +1,158 @@
+# You can safely remove the "version" line — Docker Compose v2+ ignores it
+# version: '3.8'
+
+services:
+  web:
+    build: .
+    command: >
+      bash -c "
+        chown -R appuser:appuser /app/static &&
+        chown -R appuser:appuser /app/media &&
+        chown -R appuser:appuser /app/logs &&
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python manage.py makemigrations ota_update &&
+        python manage.py migrate ota_update &&
+        python manage.py collectstatic --noinput &&
+        gunicorn esp_project.wsgi:application --bind 0.0.0.0:8000 --timeout 120
+      "
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./logs:/app/logs
+      - static_volume:/app/static
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=esp_project.settings
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=devices/+/data
+      - MQTT_TLS=false
+    depends_on:
+      - db
+      - redis
+      - mosquitto
+    networks:
+      - app-network
+
+  mqtt_consumer:
+    build: .
+    command: >
+      bash -c "
+        sleep 5 &&
+        python manage.py mqtt_consumer
+      "
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./logs:/app/logs
+      - static_volume:/app/static
+    environment:
+      - DJANGO_SETTINGS_MODULE=esp_project.settings
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - web
+      - db
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  celery_worker:
+    build: .
+    command: celery -A esp_project worker -l info
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./logs:/app/logs
+      - static_volume:/app/static
+    environment:
+      - DJANGO_SETTINGS_MODULE=esp_project.settings
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web
+    networks:
+      - app-network
+
+  celery_beat:
+    build: .
+    command: celery -A esp_project beat -l info
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./logs:/app/logs
+      - static_volume:/app/static
+    environment:
+      - DJANGO_SETTINGS_MODULE=esp_project.settings
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web
+    networks:
+      - app-network
+
+  db:
+    image: mongo:5.0
+    container_name: esp_project_db
+    restart: always
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: esp_project_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: esp_project_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/static
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: esp_project_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      # - "9001:9001" # enable if you add a websocket listener in mosquitto/conf/mosquitto.conf
+    volumes:
+      - ./mosquitto/conf:/mosquitto/config:ro
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - app-network
+
+volumes:
+  mongo_data:
+  redis_data:
+  static_volume:
+
+networks:
+  app-network:
+    driver: bridge

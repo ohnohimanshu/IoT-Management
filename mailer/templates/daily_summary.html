@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ device.device_name }} - Daily Summary</h2>
+            
+            <!-- Summary Chart -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Daily Overview</h5>
+                    <img src="{{ summary_chart }}" alt="Daily Summary Chart" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

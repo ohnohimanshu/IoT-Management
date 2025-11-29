@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Delete Device</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Delete Device</h2>
+        <p>Are you sure you want to delete the device: <strong>{{ device.name }}</strong>?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
+            <a href="{% url 'dashboard' %}" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</a>
+        </form>
+    </div>
+</body>
+</html>

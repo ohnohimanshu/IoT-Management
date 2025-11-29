@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ device.device_name }} - Device Analytics</h2>
+            
+            <!-- Metrics Chart -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Metrics (Last 24 Hours)</h5>
+                    <img src="{{ metrics_chart }}" alt="Metrics Chart" class="img-fluid">
+                </div>
+            </div>
+            
+            <!-- Status Chart -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Status Changes (Last 24 Hours)</h5>
+                    <img src="{{ status_chart }}" alt="Status Chart" class="img-fluid">
+                </div>
+            </div>
+            
+            <!-- Status Report -->
+            {% if status_report %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Status Summary</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="alert alert-info">
+                                <h6>Uptime</h6>
+                                <h3>{{ status_report.uptime_percentage }}%</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="alert alert-warning">
+                                <h6>Status Changes</h6>
+                                <h3>{{ status_report.total_changes }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if status_report.changes %}
+                    <h6 class="mt-3">Recent Status Changes</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for change in status_report.changes %}
+                                <tr>
+                                    <td>{{ change.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge {% if change.status == 'Active' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ change.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

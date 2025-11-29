@@ -1,0 +1,14 @@
+Device Status Update: {{ device_name }}
+
+Current Status: {{ device_status }}
+Last Seen: {{ last_seen }}
+
+Sensor Readings:
+{% if temperature is not None %}Temperature: {{ temperature }}°C{% endif %}
+{% if humidity is not None %}Humidity: {{ humidity }}%{% endif %}
+
+{% if other_sensors %}Additional Sensors:
+{% for key, value in other_sensors.items %}{{ key|title }}: {{ value }}
+{% endfor %}{% endif %}
+
+Reading Time: {{ timestamp }}

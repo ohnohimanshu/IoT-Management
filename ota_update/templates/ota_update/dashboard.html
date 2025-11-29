@@ -1,0 +1,1158 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTA Update Management</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fallback: Try to load project Tailwind CSS -->
+    {% tailwind_css %}
+    <style>
+        /* Ensure basic styling works even if Tailwind doesn't load */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .ota-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #e5e7eb;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .ota-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .ota-card.update-available {
+            border-left-color: #f59e0b;
+        }
+        .ota-card.up-to-date {
+            border-left-color: #10b981;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+        .status-pending { background-color: #fef3c7; color: #92400e; }
+        .status-in_progress { background-color: #dbeafe; color: #1e40af; }
+        .status-completed { background-color: #d1fae5; color: #065f46; }
+        .status-failed { background-color: #fee2e2; color: #991b1b; }
+        .status-cancelled { background-color: #f3f4f6; color: #374151; }
+        
+        /* Button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover { background-color: #059669; }
+        .btn-warning { background-color: #f59e0b; color: white; }
+        .btn-warning:hover { background-color: #d97706; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-secondary { background-color: #6b7280; color: white; }
+        .btn-secondary:hover { background-color: #4b5563; }
+        
+        /* Grid system */
+        .grid { display: grid; gap: 1.5rem; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        
+        @media (min-width: 768px) {
+            .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .md\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+        
+        @media (min-width: 1024px) {
+            .lg\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        
+        @media (min-width: 1280px) {
+            .xl\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        
+        /* Utility classes */
+        .hidden { display: none; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mt-4 { margin-top: 1rem; }
+        .ml-2 { margin-left: 0.5rem; }
+        .ml-4 { margin-left: 1rem; }
+        .mr-2 { margin-right: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-900 { color: #111827; }
+        .text-white { color: white; }
+        .text-green-600 { color: #059669; }
+        .text-red-600 { color: #dc2626; }
+        .text-yellow-600 { color: #d97706; }
+        .bg-white { background-color: white; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-yellow-50 { background-color: #fffbeb; }
+        .border-l-4 { border-left-width: 4px; }
+        .border-yellow-400 { border-color: #fbbf24; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); }
+        .shadow-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05); }
+        
+        /* Status indicators */
+        .w-3 { width: 0.75rem; }
+        .h-3 { height: 0.75rem; }
+        .bg-green-500 { background-color: #10b981; }
+        .bg-red-500 { background-color: #ef4444; }
+        .rounded-full { border-radius: 9999px; }
+        
+        /* Table styles */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.75rem 1.5rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f9fafb; font-weight: 500; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; }
+        
+        /* Form styles */
+        input, select, textarea {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Modal styles */
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.5); }
+        .z-50 { z-index: 50; }
+        .max-w-4xl { max-width: 56rem; }
+        .max-h-90vh { max-height: 90vh; }
+        .max-h-80vh { max-height: 80vh; }
+        .overflow-y-auto { overflow-y: auto; }
+        .overflow-x-auto { overflow-x: auto; }
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+        
+        /* Code block styles */
+        pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
+        /* Checkbox styles */
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+        
+        /* Button size variants */
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Disabled button styles */
+        .opacity-50 { opacity: 0.5; }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        /* Step sections */
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-green-50 { background-color: #f0fdf4; }
+        .bg-yellow-50 { background-color: #fffbeb; }
+        .text-blue-900 { color: #1e3a8a; }
+        .text-green-900 { color: #14532d; }
+        .text-yellow-900 { color: #78350f; }
+        .text-blue-700 { color: #1d4ed8; }
+        
+        /* Device selection cards */
+        .transition-colors { transition: background-color 0.2s ease; }
+        .hover\\:bg-blue-100:hover { background-color: #dbeafe; }
+        
+        /* Progress indicator */
+        .w-2 { width: 0.5rem; }
+        .h-2 { height: 0.5rem; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">OTA Update Management</h1>
+        <p class="text-gray-600">Manage firmware updates for your ESP devices</p>
+        
+        <!-- Back to Dashboard Button -->
+        <div class="mt-4">
+            <a href="/device-admin-dashboard/" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Device Admin Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Migration Warning -->
+    {% if migration_needed %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-yellow-700">
+                    <strong>Database Migration Required:</strong> 
+                    OTA functionality is limited until database tables are created. 
+                    Run <code class="bg-yellow-100 px-1 rounded">python manage.py makemigrations ota_update</code> 
+                    and <code class="bg-yellow-100 px-1 rounded">python manage.py migrate</code> to enable full features.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 rounded-lg">
+                    <i class="fas fa-microchip text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total ESP Devices</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ total_devices }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-yellow-100 rounded-lg">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Updates Available</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ devices_with_updates }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-100 rounded-lg">
+                    <i class="fas fa-cloud-upload-alt text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Active Updates</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ active_updates }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-purple-100 rounded-lg">
+                    <i class="fas fa-hdd text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Firmware Versions</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ firmware_versions|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-4 mb-8">
+        <button onclick="checkForUpdates()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+            <i class="fas fa-sync-alt mr-2"></i>
+            Check for Updates
+        </button>
+        
+        {% if not migration_needed %}
+        <button onclick="toggleFirmwareUpload()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+            <i class="fas fa-cloud-upload-alt mr-2"></i>
+            Upload Firmware
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Device Selection and Firmware Upload Form -->
+    {% if not migration_needed %}
+    <div id="firmware-upload-form" class="hidden bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Upload and Deploy Firmware</h3>
+        <form method="post" enctype="multipart/form-data" id="ota-upload-form">
+            {% csrf_token %}
+            <input type="hidden" name="upload_firmware" value="1">
+            
+            <!-- Device Selection -->
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h4 class="text-md font-medium text-blue-900 mb-3">Step 1: Select Target Device(s)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {% for device_info in devices_with_firmware %}
+                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                        <input type="checkbox" name="target_devices" value="{{ device_info.device.device_id }}" 
+                               class="mr-3" onchange="updateSelectedDevices()">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">{{ device_info.device.device_name }}</div>
+                            <div class="text-sm text-gray-600">{{ device_info.device.device_id }} ({{ device_info.device.device_type|upper }})</div>
+                            <div class="flex items-center mt-1">
+                                {% if device_info.device.device_status == 'online' %}
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                    <span class="text-xs text-green-600">Online</span>
+                                {% else %}
+                                    <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                    <span class="text-xs text-red-600">Offline</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div id="selected-devices-info" class="mt-3 text-sm text-blue-700 hidden">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <span id="selected-count">0</span> device(s) selected for update
+                </div>
+            </div>
+            
+            <!-- Firmware Upload -->
+            <div class="mb-6 p-4 bg-green-50 rounded-lg">
+                <h4 class="text-md font-medium text-green-900 mb-3">Step 2: Upload Firmware</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Firmware Name</label>
+                        {% if upload_form %}
+                            {{ upload_form.name }}
+                        {% else %}
+                            <input type="text" name="name" class="w-full" placeholder="e.g., ESP8266 Sensor v1.2.0" required>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Version Number</label>
+                        {% if upload_form %}
+                            {{ upload_form.version_number }}
+                        {% else %}
+                            <input type="text" name="version_number" class="w-full" placeholder="e.g., 1.2.0" required>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Device Type</label>
+                        {% if upload_form %}
+                            {{ upload_form.device_type }}
+                        {% else %}
+                            <select name="device_type" class="w-full" required>
+                                <option value="">Select Device Type</option>
+                                <option value="esp8266">ESP8266</option>
+                                <option value="esp32">ESP32</option>
+                                <option value="esp">ESP Generic</option>
+                            </select>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Firmware File (.bin)</label>
+                        {% if upload_form %}
+                            {{ upload_form.firmware_file }}
+                        {% else %}
+                            <input type="file" name="firmware_file" accept=".bin" class="w-full" required>
+                        {% endif %}
+                        <p class="text-xs text-gray-500 mt-1">Maximum file size: 4MB</p>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    {% if upload_form %}
+                        {{ upload_form.description }}
+                    {% else %}
+                        <textarea name="description" rows="3" class="w-full" placeholder="Describe the changes in this firmware version..."></textarea>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Update Options -->
+            <div class="mb-6 p-4 bg-yellow-50 rounded-lg">
+                <h4 class="text-md font-medium text-yellow-900 mb-3">Step 3: Update Options</h4>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="immediate_update" value="1" class="mr-3">
+                        <span class="text-sm text-gray-700">Start OTA update immediately after upload</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="backup_current" value="1" class="mr-3" checked>
+                        <span class="text-sm text-gray-700">Backup current firmware before update</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="verify_checksum" value="1" class="mr-3" checked>
+                        <span class="text-sm text-gray-700">Verify firmware checksum before deployment</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-success" id="upload-btn">
+                    <i class="fas fa-cloud-upload-alt mr-2"></i>
+                    Upload & Deploy Firmware
+                </button>
+                <button type="button" onclick="toggleFirmwareUpload()" class="btn btn-secondary">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancel
+                </button>
+                <button type="button" onclick="showESP8266Template()" class="btn btn-primary">
+                    <i class="fas fa-code mr-2"></i>
+                    ESP8266 Template
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- ESP8266 Code Template Modal -->
+    <div id="esp8266-template-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-90vh overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h3 class="text-lg font-semibold">ESP8266 OTA Base Code Template</h3>
+                <button onclick="hideESP8266Template()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-80vh">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-3">
+                        This is a base ESP8266 code template with OTA update functionality. 
+                        Copy this code, modify it for your needs, compile it in Arduino IDE, and upload the .bin file.
+                    </p>
+                    <div class="flex gap-2 mb-3">
+                        <button onclick="copyESP8266Code()" class="btn btn-primary btn-sm">
+                            <i class="fas fa-copy mr-1"></i> Copy Code
+                        </button>
+                        <button onclick="downloadESP8266Code()" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-download mr-1"></i> Download .ino
+                        </button>
+                    </div>
+                </div>
+                <pre id="esp8266-code" class="bg-gray-100 p-4 rounded-lg text-sm overflow-x-auto"><code>// ESP8266 OTA Base Code Template
+// Compatible with Arduino IDE and ESP8266 boards
+
+#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266HTTPClient.h&gt;
+#include &lt;ESP8266httpUpdate.h&gt;
+#include &lt;ArduinoJson.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+
+// Configuration - Update these values
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+const char* serverURL = "http://10.7.11.12:8000";
+const String deviceId = "esp8266_001";  // Change this for each device
+const String currentVersion = "1.0.0";
+
+// Server and HTTP client
+ESP8266WebServer server(80);
+WiFiClient wifiClient;
+
+// OTA Update variables
+bool otaInProgress = false;
+int otaProgress = 0;
+String otaUpdateId = "";
+
+// Device status
+unsigned long lastHeartbeat = 0;
+const unsigned long heartbeatInterval = 30000; // 30 seconds
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("ESP8266 OTA Base Code Starting...");
+  
+  // Connect to WiFi
+  connectToWiFi();
+  
+  // Setup web server endpoints
+  setupWebServer();
+  
+  // Send initial device registration
+  registerDevice();
+  
+  Serial.println("ESP8266 ready for OTA updates!");
+  Serial.println("Device ID: " + deviceId);
+  Serial.println("Current Version: " + currentVersion);
+}
+
+void loop() {
+  // Handle web server requests
+  server.handleClient();
+  
+  // Send periodic heartbeat
+  if (millis() - lastHeartbeat > heartbeatInterval) {
+    sendHeartbeat();
+    lastHeartbeat = millis();
+  }
+  
+  // Your main application code here
+  // Example: Read sensors, control outputs, etc.
+  
+  delay(100);
+}
+
+void connectToWiFi() {
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+    delay(1000);
+    Serial.print(".");
+    attempts++;
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println();
+    Serial.println("WiFi connected!");
+    Serial.println("IP address: " + WiFi.localIP().toString());
+  } else {
+    Serial.println();
+    Serial.println("WiFi connection failed!");
+    ESP.restart();
+  }
+}
+
+void setupWebServer() {
+  // OTA update endpoint
+  server.on("/ota", HTTP_POST, []() {
+    String body = server.arg("plain");
+    DynamicJsonDocument doc(1024);
+    deserializeJson(doc, body);
+    
+    if (doc["type"] == "ota_update") {
+      String firmwareUrl = doc["firmware_url"];
+      String firmwareVersion = doc["firmware_version"];
+      otaUpdateId = doc["update_id"];
+      
+      Serial.println("Received OTA update request:");
+      Serial.println("Firmware URL: " + firmwareUrl);
+      Serial.println("Version: " + firmwareVersion);
+      
+      server.send(200, "application/json", "{\"status\":\"accepted\"}");
+      
+      // Start OTA update
+      performOTAUpdate(firmwareUrl);
+    }
+  });
+  
+  // Status endpoint
+  server.on("/status", HTTP_GET, []() {
+    DynamicJsonDocument doc(512);
+    doc["device_id"] = deviceId;
+    doc["version"] = currentVersion;
+    doc["status"] = otaInProgress ? "updating" : "ready";
+    doc["progress"] = otaProgress;
+    doc["free_heap"] = ESP.getFreeHeap();
+    doc["uptime"] = millis();
+    
+    String response;
+    serializeJson(doc, response);
+    server.send(200, "application/json", response);
+  });
+  
+  // Restart endpoint
+  server.on("/restart", HTTP_POST, []() {
+    server.send(200, "application/json", "{\"status\":\"restarting\"}");
+    delay(1000);
+    ESP.restart();
+  });
+  
+  server.begin();
+  Serial.println("Web server started on port 80");
+}
+
+void registerDevice() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  
+  HTTPClient http;
+  http.begin(wifiClient, serverURL + "/device/register/");
+  http.addHeader("Content-Type", "application/json");
+  
+  DynamicJsonDocument doc(512);
+  doc["device_id"] = deviceId;
+  doc["device_name"] = "ESP8266 Device " + deviceId;
+  doc["device_type"] = "esp8266";
+  doc["version"] = currentVersion;
+  doc["ip_address"] = WiFi.localIP().toString();
+  doc["mac_address"] = WiFi.macAddress();
+  
+  String payload;
+  serializeJson(doc, payload);
+  
+  int httpResponseCode = http.POST(payload);
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.println("Device registration response: " + response);
+  } else {
+    Serial.println("Device registration failed: " + String(httpResponseCode));
+  }
+  
+  http.end();
+}
+
+void sendHeartbeat() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  
+  HTTPClient http;
+  http.begin(wifiClient, serverURL + "/device/data/");
+  http.addHeader("Content-Type", "application/json");
+  
+  DynamicJsonDocument doc(512);
+  doc["device_id"] = deviceId;
+  doc["status"] = "online";
+  doc["version"] = currentVersion;
+  doc["free_heap"] = ESP.getFreeHeap();
+  doc["uptime"] = millis();
+  doc["rssi"] = WiFi.RSSI();
+  
+  // Add your sensor data here
+  doc["temperature"] = 25.5; // Replace with actual sensor reading
+  doc["humidity"] = 60.0;    // Replace with actual sensor reading
+  
+  String payload;
+  serializeJson(doc, payload);
+  
+  int httpResponseCode = http.POST(payload);
+  if (httpResponseCode > 0) {
+    Serial.println("Heartbeat sent successfully");
+  } else {
+    Serial.println("Heartbeat failed: " + String(httpResponseCode));
+  }
+  
+  http.end();
+}
+
+void performOTAUpdate(String firmwareUrl) {
+  if (otaInProgress) {
+    Serial.println("OTA update already in progress");
+    return;
+  }
+  
+  otaInProgress = true;
+  otaProgress = 0;
+  
+  Serial.println("Starting OTA update...");
+  reportOTAProgress(0, "Starting OTA update");
+  
+  ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
+  ESPhttpUpdate.onStart([]() {
+    Serial.println("OTA Update Started");
+    reportOTAProgress(10, "OTA update started");
+  });
+  
+  ESPhttpUpdate.onEnd([]() {
+    Serial.println("OTA Update Finished");
+    reportOTAProgress(100, "OTA update completed");
+  });
+  
+  ESPhttpUpdate.onProgress([](int cur, int total) {
+    int progress = (cur * 80) / total + 10; // 10-90% for download
+    if (progress != otaProgress) {
+      otaProgress = progress;
+      reportOTAProgress(progress, "Downloading firmware");
+    }
+  });
+  
+  ESPhttpUpdate.onError([](int error) {
+    Serial.printf("OTA Update Error (%d): %s\n", error, ESPhttpUpdate.getLastErrorString().c_str());
+    reportOTAProgress(-1, "OTA update failed: " + ESPhttpUpdate.getLastErrorString());
+    otaInProgress = false;
+  });
+  
+  t_httpUpdate_return ret = ESPhttpUpdate.update(wifiClient, firmwareUrl);
+  
+  switch (ret) {
+    case HTTP_UPDATE_FAILED:
+      Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+      reportOTAProgress(-1, "Update failed");
+      break;
+      
+    case HTTP_UPDATE_NO_UPDATES:
+      Serial.println("HTTP_UPDATE_NO_UPDATES");
+      reportOTAProgress(-1, "No updates available");
+      break;
+      
+    case HTTP_UPDATE_OK:
+      Serial.println("HTTP_UPDATE_OK");
+      reportOTAProgress(100, "Update completed successfully");
+      break;
+  }
+  
+  otaInProgress = false;
+}
+
+void reportOTAProgress(int progress, String message) {
+  if (WiFi.status() != WL_CONNECTED) return;
+  
+  String callbackUrl = serverURL + "/ota/progress/" + otaUpdateId + "/";
+  
+  HTTPClient http;
+  http.begin(wifiClient, callbackUrl);
+  http.addHeader("Content-Type", "application/json");
+  
+  DynamicJsonDocument doc(512);
+  doc["progress"] = progress;
+  doc["status"] = message;
+  
+  if (progress < 0) {
+    doc["error"] = message;
+  }
+  
+  String payload;
+  serializeJson(doc, payload);
+  
+  int httpResponseCode = http.POST(payload);
+  if (httpResponseCode > 0) {
+    Serial.println("Progress reported: " + String(progress) + "% - " + message);
+  } else {
+    Serial.println("Failed to report progress: " + String(httpResponseCode));
+  }
+  
+  http.end();
+}
+
+// Add your custom functions here
+void readSensors() {
+  // Example: Read temperature and humidity sensors
+  // float temperature = dht.readTemperature();
+  // float humidity = dht.readHumidity();
+}
+
+void controlOutputs() {
+  // Example: Control LEDs, relays, motors, etc.
+  // digitalWrite(LED_PIN, HIGH);
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESP Devices Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        {% for device_info in devices_with_firmware %}
+        <div class="ota-card bg-white rounded-lg shadow-lg p-6 {% if device_info.firmware_info and device_info.firmware_info.update_available %}update-available{% else %}up-to-date{% endif %}">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">{{ device_info.device.device_name }}</h3>
+                    <p class="text-sm text-gray-600">{{ device_info.device.device_id }} ({{ device_info.device.device_type|upper }})</p>
+                </div>
+                <div class="flex items-center">
+                    {% if device_info.device.device_status == 'online' %}
+                        <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                        <span class="ml-2 text-sm text-green-600">Online</span>
+                    {% else %}
+                        <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                        <span class="ml-2 text-sm text-red-600">Offline</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">Current Version:</span>
+                    <span class="text-sm font-medium">
+                        {% if device_info.firmware_info %}
+                            {{ device_info.firmware_info.current_version|default:"Unknown" }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </span>
+                </div>
+                
+                {% if device_info.firmware_info and device_info.firmware_info.update_available %}
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">Available Version:</span>
+                    <span class="text-sm font-medium text-yellow-600">{{ device_info.firmware_info.available_version.version_number }}</span>
+                </div>
+                {% endif %}
+                
+                {% if device_info.latest_update %}
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">Last Update:</span>
+                    <span class="status-badge status-{{ device_info.latest_update.status }}">
+                        {{ device_info.latest_update.get_status_display }}
+                    </span>
+                </div>
+                
+                {% if device_info.latest_update.status == 'in_progress' %}
+                <div class="w-full bg-gray-200 rounded-full h-2">
+    <div 
+        class="bg-blue-600 h-2 rounded-full progress-bar" 
+        data-progress="{{ device_info.latest_update.progress_percentage|default:0 }}">
+    </div>
+</div>
+
+                <div class="text-xs text-gray-600 text-center">{{ device_info.latest_update.progress_percentage }}%</div>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="flex gap-2">
+                {% if not migration_needed and device_info.firmware_info and device_info.firmware_info.update_available and device_info.device.device_status == 'online' %}
+                    <button onclick="initiateUpdate('{{ device_info.device.device_id }}', '{{ device_info.firmware_info.available_version.id }}')" 
+                            class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm">
+                        Update Now
+                    </button>
+                {% endif %}
+                
+                <button onclick="showDeviceDetails('{{ device_info.device.device_id }}')" 
+                        class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">
+                    Details
+                </button>
+                
+                {% if device_info.latest_update and device_info.latest_update.status == 'in_progress' %}
+                    <button onclick="cancelUpdate('{{ device_info.latest_update.id }}')" 
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">
+                        Cancel
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12">
+            <i class="fas fa-microchip text-4xl text-gray-300 mb-3"></i>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No ESP devices found</h3>
+            <p class="mt-1 text-sm text-gray-500">Add ESP devices to start managing firmware updates.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Recent Updates -->
+    {% if recent_updates and not migration_needed %}
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Recent OTA Updates</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firmware</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for update in recent_updates %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ update.device.device_name }}</div>
+                            <div class="text-sm text-gray-500">{{ update.device.device_id }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ update.firmware_version.name }}</div>
+                            <div class="text-sm text-gray-500">v{{ update.firmware_version.version_number }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="status-badge status-{{ update.status }}">
+                                {{ update.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if update.status == 'in_progress' %}
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+    <div 
+        class="bg-blue-600 h-2 rounded-full progress-bar" 
+        data-progress="{{ update.progress_percentage|default:0 }}">
+    </div>
+</div>
+
+                                <div class="text-xs text-gray-600 mt-1">{{ update.progress_percentage }}%</div>
+                            {% else %}
+                                <span class="text-sm text-gray-500">{{ update.progress_percentage }}%</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ update.initiated_at|date:"M d, H:i" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="viewUpdateDetails('{{ update.id }}')" class="text-blue-600 hover:text-blue-900">
+                                View Details
+                            </button>
+                            {% if update.status == 'in_progress' %}
+                                <button onclick="cancelUpdate('{{ update.id }}')" class="ml-2 text-red-600 hover:text-red-900">
+                                    Cancel
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript -->
+<script>
+
+document.querySelectorAll('.progress-bar').forEach(bar => {
+    const progress = bar.dataset.progress || 0;
+    bar.style.width = progress + '%';
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.progress-bar').forEach(bar => {
+        const progress = parseFloat(bar.dataset.progress) || 0;
+        bar.style.width = progress + '%';
+    });
+});
+
+function toggleFirmwareUpload() {
+    const form = document.getElementById('firmware-upload-form');
+    if (form) {
+        form.classList.toggle('hidden');
+        if (!form.classList.contains('hidden')) {
+            // Reset form when opening
+            form.querySelector('form').reset();
+            updateSelectedDevices();
+        }
+    }
+}
+
+function updateSelectedDevices() {
+    const checkboxes = document.querySelectorAll('input[name="target_devices"]:checked');
+    const count = checkboxes.length;
+    const info = document.getElementById('selected-devices-info');
+    const countSpan = document.getElementById('selected-count');
+    const uploadBtn = document.getElementById('upload-btn');
+    
+    if (count > 0) {
+        info.classList.remove('hidden');
+        countSpan.textContent = count;
+        uploadBtn.disabled = false;
+        uploadBtn.classList.remove('opacity-50');
+    } else {
+        info.classList.add('hidden');
+        uploadBtn.disabled = true;
+        uploadBtn.classList.add('opacity-50');
+    }
+}
+
+function showESP8266Template() {
+    document.getElementById('esp8266-template-modal').classList.remove('hidden');
+}
+
+function hideESP8266Template() {
+    document.getElementById('esp8266-template-modal').classList.add('hidden');
+}
+
+function copyESP8266Code() {
+    const code = document.getElementById('esp8266-code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        alert('ESP8266 code copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy code: ', err);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = code;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('ESP8266 code copied to clipboard!');
+    });
+}
+
+function downloadESP8266Code() {
+    const code = document.getElementById('esp8266-code').textContent;
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'esp8266_ota_base.ino';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    alert('ESP8266 code downloaded as esp8266_ota_base.ino');
+}
+
+function checkForUpdates() {
+    fetch('/ota/check-updates/', {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Found ${data.updates_available} devices with available updates out of ${data.total_devices} total devices.`);
+            location.reload();
+        } else {
+            alert('Error checking for updates: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error checking for updates');
+    });
+}
+
+function initiateUpdate(deviceId, firmwareVersionId) {
+    if (!confirm('Are you sure you want to start the OTA update? This will restart the device.')) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('firmware_version_id', firmwareVersionId);
+
+    fetch(`/ota/update/${deviceId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error initiating update');
+    });
+}
+
+function cancelUpdate(updateId) {
+    if (!confirm('Are you sure you want to cancel this OTA update?')) {
+        return;
+    }
+
+    fetch(`/ota/cancel/${updateId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error cancelling update');
+    });
+}
+
+function viewUpdateDetails(updateId) {
+    fetch(`/ota/status/${updateId}/`)
+    .then(response => response.json())
+    .then(data => {
+        let details = `Update Details:\n\n`;
+        details += `Device: ${data.device_name} (${data.device_id})\n`;
+        details += `Firmware: ${data.firmware_name} v${data.firmware_version_number}\n`;
+        details += `Status: ${data.status}\n`;
+        details += `Progress: ${data.progress_percentage}%\n`;
+        details += `Initiated: ${new Date(data.initiated_at).toLocaleString()}\n`;
+        
+        if (data.error_message) {
+            details += `Error: ${data.error_message}\n`;
+        }
+        
+        alert(details);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error fetching update details');
+    });
+}
+
+function showDeviceDetails(deviceId) {
+    alert(`Device details for ${deviceId} - Feature coming soon!`);
+}
+
+// Auto-refresh for active updates
+setInterval(() => {
+    const activeUpdates = document.querySelectorAll('.status-in_progress');
+    if (activeUpdates.length > 0) {
+        location.reload();
+    }
+}, 30000); // Refresh every 30 seconds if there are active updates
+</script>
+</body>
+</html>

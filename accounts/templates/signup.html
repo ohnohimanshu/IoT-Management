@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | DeviceMonitor Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Animated background particles */
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(59, 130, 246, 0.6);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* Glass morphism signup form */
+        .signup-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border-radius: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .signup-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #8b5cf6, #06b6d4, #3b82f6);
+            background-size: 400% 400%;
+            animation: gradientMove 3s ease infinite;
+        }
+
+        .signup-card:hover {
+            transform: scale(1.02) translateY(-4px);
+            box-shadow: 0 16px 48px 0 rgba(139, 92, 246, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Enhanced input fields */
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Enhanced select dropdown */
+        .select-field {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .select-field:focus {
+            outline: none;
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .select-field option {
+            background: #1a1a2e;
+            color: white;
+            padding: 10px;
+        }
+
+        /* Enhanced button */
+        .signup-btn {
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4, #3b82f6, #8b5cf6);
+            background-size: 400% 400%;
+            animation: gradientMove 3s ease infinite;
+            color: white;
+            box-shadow: 0 8px 32px 0 rgba(139,92,246,0.4);
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: none;
+            font-weight: 600;
+        }
+
+        .signup-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .signup-btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        .signup-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 16px 48px 0 rgba(139,92,246,0.6);
+        }
+
+        /* Brand logo */
+        .brand-logo {
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #3b82f6 100%);
+            width: 4rem;
+            height: 4rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(139,92,246,0.4);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Text effects */
+        .hero-title {
+            background: linear-gradient(135deg, #ffffff, #c084fc, #06b6d4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: textShimmer 4s ease-in-out infinite;
+        }
+
+        @keyframes textShimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Floating animation */
+        .floating {
+            animation: floating 4s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Label styling */
+        .input-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Link styling */
+        .auth-link {
+            color: #c084fc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .auth-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+            transition: width 0.3s ease;
+        }
+
+        .auth-link:hover::after {
+            width: 100%;
+        }
+
+        .auth-link:hover {
+            color: #06b6d4;
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+
+        /* Back to home link */
+        .back-home {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-home:hover {
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        /* Error message styling */
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Role icons */
+        .role-icon {
+            display: inline-block;
+            margin-right: 0.5rem;
+            width: 1rem;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .back-home {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 2rem;
+                display: inline-block;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 15, 35, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 py-8">
+    <!-- Animated background particles -->
+    <div class="bg-particles" id="particles"></div>
+
+    <!-- Back to Home Link -->
+    <a href="{% url 'home' %}" class="back-home">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back to Home</span>
+    </a>
+
+    <div class="w-full max-w-md relative z-10">
+        <!-- Signup Card -->
+        <div class="signup-card p-8 floating">
+            <!-- Brand Logo -->
+            <div class="brand-logo">
+                <i class="fas fa-microchip text-white text-2xl"></i>
+            </div>
+            
+            <!-- Welcome Text -->
+            <h1 class="text-3xl font-bold hero-title mb-2 text-center">
+                Join DeviceMonitor
+            </h1>
+            <p class="text-purple-200 mb-8 text-center">
+                Create your account and start monitoring
+            </p>
+
+            <!-- Signup Form -->
+            <form id="signupForm" class="space-y-5">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="username" class="block input-label">
+                        <i class="fas fa-user mr-2"></i>Username
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        class="input-field w-full px-4 py-3 text-white placeholder-gray-400" 
+                        placeholder="Choose your username"
+                        required
+                    >
+                    <div class="error-message" id="username-error"></div>
+                </div>
+                
+                <div>
+                    <label for="email" class="block input-label">
+                        <i class="fas fa-envelope mr-2"></i>Email Address
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="input-field w-full px-4 py-3 text-white placeholder-gray-400" 
+                        placeholder="Enter your email"
+                        required
+                    >
+                    <div class="error-message" id="email-error"></div>
+                </div>
+
+                <div>
+                    <label for="password" class="block input-label">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="input-field w-full px-4 py-3 text-white placeholder-gray-400" 
+                        placeholder="Create a strong password"
+                        required
+                    >
+                    <div class="error-message" id="password-error"></div>
+                </div>
+
+                <div>
+                    <label for="password2" class="block input-label">
+                        <i class="fas fa-lock mr-2"></i>Confirm Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password2" 
+                        name="password2" 
+                        class="input-field w-full px-4 py-3 text-white placeholder-gray-400" 
+                        placeholder="Confirm your password"
+                        required
+                    >
+                    <div class="error-message" id="password2-error"></div>
+                </div>
+
+                <div>
+                    <label for="role" class="block input-label">
+                        <i class="fas fa-user-tag mr-2"></i>Account Role
+                    </label>
+                    <select 
+                        id="role" 
+                        name="role" 
+                        class="select-field w-full px-4 py-3 text-white" 
+                        required
+                    >
+                        <option value="">Select your role</option>
+                        <option value="user">
+                            <i class="fas fa-user role-icon"></i>User - Basic Access
+                        </option>
+                        <option value="device-administrator">
+                            <i class="fas fa-cogs role-icon"></i>Device Administrator - Manage Devices
+                        </option>
+                        <option value="admin">
+                            <i class="fas fa-crown role-icon"></i>Admin - Full Access
+                        </option>
+                    </select>
+                    <div class="error-message" id="role-error"></div>
+                </div>
+
+                <button type="submit" class="signup-btn w-full py-3 px-4 text-white font-semibold">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Create Account
+                </button>
+            </form>
+
+            <!-- Login Link -->
+            <p class="text-center text-gray-300 mt-6">
+                Already have an account? 
+                <a href="{% url 'login' %}" class="auth-link">Log in</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Create animated particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 15}s`;
+                container.appendChild(particle);
+            }
+        }
+
+        // Form validation and submission
+        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Reset error messages
+            document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
+            
+            const formData = new FormData(this);
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                password2: formData.get('password2'),
+                role: formData.get('role')
+            };
+
+            // Basic validation
+            let hasError = false;
+
+            if (data.password !== data.password2) {
+                document.getElementById('password2-error').textContent = 'Passwords do not match';
+                document.getElementById('password2-error').classList.add('show');
+                hasError = true;
+            }
+
+            if (data.password.length < 8) {
+                document.getElementById('password-error').textContent = 'Password must be at least 8 characters long';
+                document.getElementById('password-error').classList.add('show');
+                hasError = true;
+            }
+
+            if (!data.role) {
+                document.getElementById('role-error').textContent = 'Please select a role';
+                document.getElementById('role-error').classList.add('show');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            try {
+                const response = await fetch('', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    window.location.href = result.redirect_url;
+                } else {
+                    // Handle specific errors
+                    if (result.error.includes('username')) {
+                        document.getElementById('username-error').textContent = result.error;
+                        document.getElementById('username-error').classList.add('show');
+                    } else if (result.error.includes('email')) {
+                        document.getElementById('email-error').textContent = result.error;
+                        document.getElementById('email-error').classList.add('show');
+                    } else {
+                        alert(result.error);
+                    }
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert('An error occurred. Please try again later.');
+            }
+        });
+
+        // Initialize particles
+        createParticles();
+    </script>
+</body>
+</html>

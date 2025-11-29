@@ -1,0 +1,69 @@
+{% block content %}
+
+<div class="flex justify-center mt-8">
+    <div class="w-full max-w-lg">
+        <div class="bg-white p-8 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-4">Add Email Recipient</h2>
+
+            <!-- Form for adding an email recipient -->
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-4">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                </div>
+
+                <!-- Display form errors if any -->
+                {% if form.errors %}
+                    <div class="text-red-600 mb-4">
+                        <strong>Errors:</strong>
+                        <ul>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|title }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <button type="submit" class="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-semibold">
+                    Add Email
+                </button>
+            </form>
+        </div>
+
+        <!-- Recipient List -->
+        <div class="mt-8">
+            <h3 class="text-xl font-bold text-center mb-4">Recipient List</h3>
+            <ul class="bg-white p-4 rounded-lg shadow-lg">
+                {% for recipient in recipients %}
+                    <li class="bg-gray-200 p-2 rounded-md mb-2 flex justify-between items-center">
+                        {{ recipient.email }}
+                        <a href="{% url 'delete_email_recipient' recipient.id %}" class="text-red-600 hover:text-red-700">Delete</a>
+                    </li>
+                {% empty %} 
+                    <li class="text-gray-500 text-center">No recipients added yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Send Device Status Email -->
+        <div class="mt-8 text-center">
+            {% if devices %}
+                {% for device in devices %}
+                    <form method="POST" action="{% url 'send_device_status_email' device.device_id %}" class="mb-2">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full py-2 px-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md font-semibold">
+                            Send Status Email for {{ device.device_name }}
+                        </button>
+                    </form>
+                {% endfor %}
+            {% else %}
+                <p class="text-gray-500">No devices found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

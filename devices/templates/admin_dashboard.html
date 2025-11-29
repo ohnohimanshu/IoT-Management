@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Dashboard{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.0"></script>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<style>
+    /* General Reset */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    /* Body and Basic Styles */
+    body {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background-color: #f9fafb;
+        color: #1f2937;
+        line-height: 1.6;
+    }
+
+    /* Layout */
+    .container {
+        display: flex;
+        min-height: 100vh;
+        position: relative;
+    }
+
+    /* Left Navigation */
+    .left-nav {
+        width: 280px;
+        background-color: #ffffff;
+        color: #4b5563;
+        padding: 1.5rem;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        border-right: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        z-index: 50;
+    }
+
+    .nav-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .nav-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #4f46e5;
+        margin-bottom: 0.5rem;
+    }
+
+    .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        color: #4b5563;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+    }
+
+    .nav-link:hover {
+        background-color: #f3f4f6;
+        color: #4f46e5;
+    }
+
+    .nav-link.active {
+        background-color: #4f46e5;
+        color: white;
+    }
+
+    .nav-link i {
+        margin-right: 0.75rem;
+        width: 1.25rem;
+        text-align: center;
+    }
+
+    /* Main Content */
+    .main-content {
+        flex: 1;
+        margin-left: 280px;
+        padding: 2rem;
+        transition: margin-left 0.3s ease;
+        min-height: 100vh;
+    }
+
+    .sections-container {
+        position: relative;
+        width: 100%;
+    }
+
+    .section {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .section.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .main-content {
+            margin-left: 0;
+            padding: 1rem;
+        }
+    }
+
+    /* Button Styles */
+    .btn-primary {
+        background-color: #4f46e5;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary:hover {
+        background-color: #4338ca;
+    }
+
+    .btn-primary:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+    }
+
+    /* General Reset */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    /* Body and Basic Styles */
+    body {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background-color: #f9fafb;
+        color: #1f2937;
+        line-height: 1.6;
+    }
+
+    /* Layout */
+    .container {
+        display: flex;
+        min-height: 100vh;
+        position: relative;
+    }
+
+    /* Left Navigation */
+    .left-nav {
+        width: 280px;
+        background-color: #ffffff;
+        color: #4b5563;
+        padding: 1.5rem;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        border-right: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        z-index: 50;
+    }
+
+    .nav-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .nav-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #4f46e5;
+        margin-bottom: 0.5rem;
+    }
+
+    .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .nav-link {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 500;
+    }
+
+    .nav-link:hover {
+        background-color: #f3f4f6;
+        color: #4f46e5;
+    }
+
+    .nav-link.active {
+        background-color: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .nav-link i {
+        width: 1.25rem;
+        text-align: center;
+    }
+
+    /* Main Content Area */
+    .main-content {
+        flex: 1;
+        padding: 1.5rem;
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+    }
+
+    /* Section Styles */
+    .section {
+        background-color: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+
+    .section:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    /* Tables */
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 1rem;
+    }
+
+    table th, table td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+    }
+
+    table th {
+        background-color: #f9fafb;
+        font-weight: 600;
+        color: #4b5563;
+        border-bottom: 1px solid #e5e7eb;
+        position: sticky;
+        top: 0;
+    }
+
+    table tr {
+        border-bottom: 1px solid #e5e7eb;
+        transition: background-color 0.2s ease;
+    }
+
+    table tr:hover {
+        background-color: #f9fafb;
+    }
+
+    table td {
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* Status indicators */
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-online {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-offline {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+
+    /* Form Styles */
+    form {
+        display: grid;
+        gap: 1.25rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    label {
+        font-weight: 500;
+        color: #4b5563;
+        font-size: 0.875rem;
+    }
+
+    input, select, textarea {
+        padding: 0.625rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #a5b4fc;
+        box-shadow: 0 0 0 3px rgba(165, 180, 252, 0.25);
+    }
+
+    button {
+        padding: 0.625rem 1.25rem;
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    button:hover {
+        background-color: #4338ca;
+        transform: translateY(-1px);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    .btn-secondary {
+        background-color: #ffffff;
+        color: #4b5563;
+        border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+        background-color: #f9fafb;
+        color: #111827;
+    }
+
+    .btn-danger {
+        background-color: #ef4444;
+    }
+
+    .btn-danger:hover {
+        background-color: #dc2626;
+    }
+
+    /* Chart Containers */
+    .chart-container {
+        height: 300px;
+        margin-top: 1.25rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    #chartContainer {
+        width: 90%;
+        height: 400px;
+    }
+
+    /* Notification styles */
+    .notification {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 100;
+        max-width: 24rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transform: translateX(calc(100% + 1rem));
+        transition: transform 0.3s ease;
+    }
+
+    .notification.show {
+        transform: translateX(0);
+    }
+
+    .notification-success {
+        border-left: 4px solid #10b981;
+    }
+
+    .notification-error {
+        border-left: 4px solid #ef4444;
+    }
+
+    .notification-info {
+        border-left: 4px solid #3b82f6;
+    }
+
+    /* Mobile menu button */
+    .mobile-menu-button {
+        display: none;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 60;
+        background-color: #ffffff;
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Logout button */
+    .logout-button {
+        margin-top: 2rem;
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #fee2e2;
+        color: #b91c1c;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .logout-button:hover {
+        background-color: #fecaca;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    /* Media Queries for Responsiveness */
+    @media (max-width: 1024px) {
+        .left-nav {
+            width: 240px;
+        }
+        
+        .main-content {
+            margin-left: 240px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            flex-direction: column;
+        }
+        
+        .left-nav {
+            transform: translateX(-100%);
+            width: 280px;
+        }
+        
+        .left-nav.active {
+            transform: translateX(0);
+        }
+        
+        .main-content {
+            margin-left: 0;
+            width: 100%;
+            padding: 1rem;
+        }
+        
+        .mobile-menu-button {
+            display: flex;
+        }
+        
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        table th, table td {
+            padding: 0.75rem;
+        }
+        
+        .chart-container {
+            max-width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .left-nav {
+            padding: 0.5rem;
+        }
+        
+        .left-nav button {
+            padding: 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+        }
+        
+        .main-content {
+            padding: 1rem;
+        }
+        
+        table th, table td {
+            font-size: 0.875rem;
+        }
+        
+        .chart-container {
+            max-width: 100%;
+        }
+        
+        .section {
+            padding: 1rem;
+        }
+        
+        form {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Animation Styles */
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .animate-bounce {
+        animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(-25%);
+            animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+        }
+        50% {
+            transform: translateY(0);
+            animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .animate-slide-in-right {
+        animation: slideInRight 0.3s ease-in-out;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .animate-slide-in-left {
+        animation: slideInLeft 0.3s ease-in-out;
+    }
+
+    @keyframes slideInLeft {
+        from {
+            transform: translateX(-100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .animate-slide-in-top {
+        animation: slideInTop 0.3s ease-in-out;
+    }
+
+    @keyframes slideInTop {
+        from {
+            transform: translateY(-100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    .animate-scale {
+        transition: transform 0.2s ease;
+    }
+
+    .animate-scale:hover {
+        transform: scale(1.05);
+    }
+
+    /* User dropdown animation */
+    .user-dropdown {
+        position: absolute;
+        top: calc(100% + 5px);
+        right: 0;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        width: 200px;
+        z-index: 50;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .user-dropdown.show {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .user-dropdown-item {
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        color: #4b5563;
+        font-size: 0.875rem;
+        transition: background-color 0.2s;
+    }
+
+    .user-dropdown-item:hover {
+        background-color: #f3f4f6;
+    }
+
+    .user-dropdown-item i {
+        margin-right: 0.75rem;
+        width: 1.25rem;
+        text-align: center;
+        color: #6b7280;
+    }
+
+    .user-dropdown-divider {
+        height: 1px;
+        background-color: #e5e7eb;
+        margin: 0.5rem 0;
+    }
+</style>
+</head>
+<body class="bg-gray-50">
+    <!-- Mobile menu button -->
+    <button id="mobileMenuToggle" class="mobile-menu-button">
+        <i class="fas fa-bars text-gray-700 text-xl"></i>
+    </button>
+
+    <div class="container">
+        <!-- Left Navigation -->
+        <div id="leftNav" class="left-nav">
+            <div class="nav-header">
+                <h2>Admin</h2>
+            </div>
+            <nav class="nav-links">
+                <button id="dashboardBtn" class="nav-link active">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button id="addDeviceBtn" class="nav-link">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Device</span>
+                </button>
+                <button id="deviceListBtn" class="nav-link">
+                    <i class="fas fa-list"></i>
+                    <span>Device List</span>
+                </button>
+                <button id="deviceDataBtn" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Device Data</span>
+                </button>
+                <button id="mailBtn" class="nav-link">
+                    <i class="fas fa-envelope"></i>
+                    <span>Mail Settings</span>
+                </button>
+                <button id="controlBtn" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    <span>Control Panel</span>
+                </button>
+                <button id="otaUpdateBtn" class="nav-link">
+                    <i class="fas fa-download"></i>
+                    <span>OTA Updates</span>
+                </button>
+            </nav>
+                <div class="mt-10 pt-6 border-t border-gray-700">
+                    <div class="flex items-center px-4 py-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-circle text-2xl text-gray-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium">{{ user.username }}</p>
+                            <p class="text-xs text-gray-400">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <a href="/logout/" class="mt-2 flex items-center px-4 py-3 text-sm font-medium text-gray-400 rounded-md hover:bg-gray-700 hover:text-white btn-effect">
+                        <i class="fas fa-sign-out-alt mr-3"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="sections-container">
+                <!-- Dashboard Summary Section -->
+                <section id="dashboardSummary" class="section">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <!-- Total Devices -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Total Devices</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" data-stat="total-devices">{{ devices.count }}</h3>
+                                </div>
+                                <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-microchip text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-green-600 font-medium" data-stat="active-devices">{{ active_devices_count }} Active</span>
+                                    <span class="mx-2 text-gray-300">|</span>
+                                    <span class="text-red-600 font-medium" data-stat="inactive-devices">{{ inactive_devices_count }} Inactive</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Users -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Active Users</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" data-stat="active-users">{{ users.count }}</h3>
+                                </div>
+                                <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-users text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-gray-600">Last 24 hours</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alerts Sent -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Alerts Sent</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" data-stat="alerts-count">{{ alerts_count }}</h3>
+                                </div>
+                                <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-bell text-yellow-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-gray-600">Last 24 hours</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Health -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">System Health</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" data-stat="health-status">{{ health_status }}</h3>
+                                </div>
+                                <div class="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-heartbeat text-purple-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-gray-600" data-stat="last-health-check">Last checked: {{ last_health_check }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Alerts -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Recent Alerts</h3>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm text-gray-500">
+                                    <span class="font-medium text-red-600">{{ unread_alerts }}</span> unread alerts
+                                </span>
+                                <form method="post" action="{% url 'mark_all_alerts_read' %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-sm text-indigo-900 ">
+                                        Mark all as read
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            {% for alert in recent_alerts %}
+                            <div class="flex items-start space-x-4 p-3 {% if not alert.is_read %}bg-blue-50{% else %}bg-gray-50{% endif %} rounded-lg">
+                                <div class="flex-shrink-0">
+                                    <div class="h-10 w-10 rounded-full 
+                                        {% if alert.severity == 'high' %}bg-red-100
+                                        {% elif alert.severity == 'medium' %}bg-yellow-100
+                                        {% else %}bg-blue-100{% endif %} 
+                                        flex items-center justify-center">
+                                        <i class="fas fa-exclamation-circle 
+                                            {% if alert.severity == 'high' %}text-red-600
+                                            {% elif alert.severity == 'medium' %}text-yellow-600
+                                            {% else %}text-blue-600{% endif %}"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-gray-900">{{ alert.title }}</p>
+                                        {% if not alert.is_read %}
+                                        <form method="post" action="{% url 'mark_alert_read' alert.id %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-xs text-indigo-900 hover:text-indigo-800">
+                                                Mark as read
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-sm text-gray-500">{{ alert.message }}</p>
+                                    <div class="mt-1 flex items-center text-xs text-gray-400">
+                                        <span>{{ alert.timestamp|timesince }} ago</span>
+                                        {% if alert.device_id %}
+                                        <span class="mx-2">•</span>
+                                        <span>Device ID: {{ alert.device_id }}</span>
+                                        {% endif %}
+                                        <span class="mx-2">•</span>
+                                        <span class="capitalize">{{ alert.type }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-bell text-3xl mb-2"></i>
+                                <p>No alerts found</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if alerts_count > 10 %}
+                        <div class="mt-4 flex justify-center">
+                            <a href="{% url 'get_user_alerts' %}" class="text-sm text-indigo-600 hover:text-indigo-800">
+                                View all {{ alerts_count }} alerts
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Device Status -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Device Status Timeline (Last 24 Hours)</h3>
+                        <div class="overflow-x-auto">
+                            <table id="deviceTimeline" class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Changes</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Online</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for device in devices %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-gray-100">
+                                                    <i class="fas fa-microchip text-gray-600"></i>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">{{ device.device_name }}</div>
+                                                    <div class="text-sm text-gray-500">{{ device.device_id }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">{{ device.status_change_count }} changes</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">{{ device.last_seen|default:"Never" }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                                {% if device.device_status == 'online' %}bg-green-100 text-green-800
+                                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                                {{ device.device_status|title }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                                            No devices found
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Other sections -->
+                <section id="addDeviceSection" class="section hidden">
+                    <div class="section-header">
+                        <h2 class="section-title">Add New Device</h2>
+                        <p class="text-sm text-gray-500">Create a new IoT device and assign it to a user</p>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <!-- Add Device Form -->
+                        <div class="w-full md:w-1/2">
+                            <form id="addDeviceForm" method="post" action="{% url 'add_device' %}" class="mt-4">
+                                {% csrf_token %}
+                                <div class="space-y-4">
+                                    <div class="form-group">
+                                        <label for="device_name">Device Name</label>
+                                        <input type="text" id="device_name" name="device_name" placeholder="Enter device name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="device_id">Device ID</label>
+                                        <input type="text" id="device_id" name="device_id" placeholder="Enter unique device ID" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="email">Email for Notifications</label>
+                                        <input type="email" id="email" name="email" placeholder="Enter email address" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="user">Assign User</label>
+                                        <select id="user" name="user" required>
+                                            <option value="">Select User</option>
+                                            {% for user in users %}
+                                            <option value="{{ user.id }}">{{ user.username }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="device_type">Device Type</label>
+                                        <select id="device_type" name="device_type" required>
+                                            <option value="esp">ESP</option>
+                                            <option value="lora">LoRa</option>
+                                            <option value="esp8266">ESP8266</option>
+                                            <option value="esp32">ESP32</option>
+                                            <option value="arduino">Arduino</option>
+                                            <option value="raspberry_pi">Raspberry Pi</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex justify-end mt-6">
+                                        <button type="reset" class="btn-secondary mr-3">
+                                            <i class="fas fa-undo mr-1"></i> Reset
+                                        </button>
+                                        <button type="submit">
+                                            <i class="fas fa-plus-circle mr-1"></i> Add Device
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Devices Table -->
+                        <div class="w-full md:w-1/2">
+                            <h3 class="text-lg font-medium text-gray-800 mb-4">Already Added Devices</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border border-gray-200 rounded-md">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-6 py-3 border-b border-gray-200 bg-gray-100 text-left text-sm font-medium text-gray-700">Device Name</th>
+                                            <th class="px-6 py-3 border-b border-gray-200 bg-gray-100 text-left text-sm font-medium text-gray-700">Device ID</th>
+                                            <th class="px-6 py-3 border-b border-gray-200 bg-gray-100 text-left text-sm font-medium text-gray-700">Email</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for device in devices %}
+                                        <tr>
+                                            <td class="px-6 py-4 border-b border-gray-200 text-sm text-gray-900">{{ device.device_name }}</td>
+                                            <td class="px-6 py-4 border-b border-gray-200 text-sm text-gray-900">{{ device.device_id }}</td>
+                                            <td class="px-6 py-4 border-b border-gray-200 text-sm text-gray-900">{{ device.email }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No devices added yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="deviceListSection" class="section hidden">
+                    <div class="section-header">
+                        <h2 class="section-title">Device List</h2>
+                        <p class="text-sm text-gray-500">Manage and monitor all registered IoT devices</p>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-4 mt-6">
+                        <div class="w-full md:w-1/3 mb-4 md:mb-0">
+                            <div class="relative">
+                                <input type="text" id="deviceSearchInput" placeholder="Search devices..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            </div>
+                        </div>
+                       
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr class="bg-gray-50">
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned User</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temp Threshold</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for device in devices %}
+                                    <tr id="device-{{ device.id }}" class="hover:bg-gray-50 transition-colors duration-150">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                                                    <i class="fas {% if device.device_type == 'esp' %}fa-microchip{% elif device.device_type == 'lora' %}fa-broadcast-tower{% elif device.device_type == 'esp8266' %}fa-microchip{% elif device.device_type == 'esp32' %}fa-microchip{% elif device.device_type == 'arduino' %}fa-cogs{% elif device.device_type == 'raspberry_pi' %}fa-server{% else %}fa-hdd{% endif %}"></i>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">{{ device.device_name }}</div>
+                                                    <div class="text-sm text-gray-500">{{ device.device_id }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ device.device_id }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">{{ device.user.username|default:"N/A" }}</div>
+                                            <div class="text-sm text-gray-500">{{ device.user.email|default:"N/A" }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {% if device.device_status == 'online' %}
+                                            <span class="status-badge status-online">Online</span>
+                                            {% else %}
+                                            <span class="status-badge status-offline">Offline</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ device.high_temp_threshold|default:'Default (25°C)' }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex space-x-2">
+                                                <button class="btn-primary btn-sm flex-1 animate-scale" onclick="event.stopPropagation(); var fromParam = (new URLSearchParams(window.location.search).get('from')) || 'admin_dashboard'; window.location.href = '/edit-device/{{ device.id }}/?from=' + fromParam;">
+                                                    Edit
+                                                </button>
+                                                <button class="btn-secondary btn-sm flex-1 animate-scale action-btn delete" onclick="deleteDevice('{{ device.id }}')">
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500">
+                                            <div class="flex flex-col items-center justify-center">
+                                                <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
+                                                <p>No devices found.</p>
+                                                <p class="mt-1">Add a new device to get started.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if devices.has_other_pages %}
+                        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-700">
+                                        Showing <span class="font-medium">{{ devices.start_index }}</span> to <span class="font-medium">{{ devices.end_index }}</span> of <span class="font-medium">{{ devices.paginator.count }}</span> devices
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                        {% if devices.has_previous %}
+                                        <a href="?page={{ devices.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <span class="sr-only">Previous</span>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                            <span class="sr-only">Previous</span>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% for i in devices.paginator.page_range %}
+                                            {% if devices.number == i %}
+                                            <span class="relative inline-flex items-center px-4 py-2 border border-primary bg-primary-light text-sm font-medium text-primary-dark">
+                                                {{ i }}
+                                            </span>
+                                            {% else %}
+                                            <a href="?page={{ i }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                {{ i }}
+                                            </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if devices.has_next %}
+                                        <a href="?page={{ devices.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <span class="sr-only">Next</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                            <span class="sr-only">Next</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </span>
+                                        {% endif %}
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Device Data Section -->
+                <section id="deviceDataSection" class="section hidden">
+                    <div class="bg-white shadow rounded-lg p-6 mb-8">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Device Data</h2>
+                        
+                        <!-- Device List Table -->
+                        <div class="overflow-x-auto mb-8">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3">Device Name</th>
+                                        <th class="px-6 py-3">Device ID</th>
+                                        <th class="px-6 py-3">Assigned User</th>
+                                        <th class="px-6 py-3">Status</th>
+                                        <th class="px-6 py-3">View Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for device in devices %}
+                                    <tr class="hover:bg-gray-100">
+                                        <td class="px-6 py-4">{{ device.device_name }}</td>
+                                        <td class="px-6 py-4">{{ device.device_id }}</td>
+                                        <td class="px-6 py-4">{{ device.user.username|default:"N/A" }}</td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if device.device_status == 'online' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                                {{ device.device_status|title }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <a href="{% url 'device_data' device.device_id|urlencode %}?from=admin_dashboard" class="text-indigo-600 hover:text-indigo-900">
+                                                View Data
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="mailSection" class="section hidden">
+                    <div class="section-header">
+                        <h2 class="section-title">Email Notifications</h2>
+                        <p class="text-sm text-gray-500">Configure email settings and manage recipients</p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <!-- Email Settings -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col gap-6">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Email Settings</h3>
+                                <form id="emailSettingsForm" method="post" action="{% url 'set_global_interval' %}" class="space-y-4">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label for="interval" class="block text-sm font-medium text-gray-700">Email Interval (hours)</label>
+                                        <input type="number" id="interval" name="interval" min="1" max="24" value="{{ current_interval }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="notification_type" class="block text-sm font-medium text-gray-700">Notification Type</label>
+                                        <select id="notification_type" name="notification_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                                            <option value="all">All Updates</option>
+                                            <option value="status_change">Status Changes Only</option>
+                                            <option value="critical">Critical Alerts Only</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="send_immediate" name="send_immediate" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                                        <label for="send_immediate" class="ml-2 block text-sm text-gray-700">Send immediate alerts for critical events</label>
+                                    </div>
+                                    <div class="flex justify-end gap-2">
+                                        <button type="submit" class="btn-primary">
+                                            <i class="fas fa-save mr-2"></i> Save Settings
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Recipients Management -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col gap-6">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Recipients</h3>
+                                <!-- Add New Recipient -->
+                                <form id="addRecipientForm" method="post" action="{% url 'email_recipient_list' %}" class="mb-6 flex gap-2">
+                                    {% csrf_token %}
+                                    <input type="email" id="new_recipient" name="email" placeholder="Enter email address" class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary" required>
+                                    <button type="submit" class="btn-primary"><i class="fas fa-plus mr-2"></i> Add</button>
+                                </form>
+                                <!-- Recipients List -->
+                                <div class="space-y-3">
+                                    {% for recipient in recipients %}
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-envelope text-gray-400 mr-3"></i>
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900">{{ recipient.email }}</p>
+                                                <p class="text-xs text-gray-500">Added {{ recipient.added_at|timesince }} ago</p>
+                                            </div>
+                                        </div>
+                                        <form method="post" action="{% url 'delete_email_recipient' recipient.id %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure you want to remove this recipient?')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% empty %}
+                                    <div class="text-center py-4 text-gray-500">
+                                        <i class="fas fa-users text-3xl mb-2"></i>
+                                        <p>No recipients added yet</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Email Templates -->
+                    <div class="mt-6 bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Email Templates</h3>
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="email_subject" class="block text-sm font-medium text-gray-700">Subject Template</label>
+                                <input type="text" id="email_subject" name="subject" value="Device Status Update: {device_name}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                            </div>
+                            <div class="form-group">
+                                <label for="email_body" class="block text-sm font-medium text-gray-700">Body Template</label>
+                                <textarea id="email_body" name="body" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">Hello,
+
+This is an automated status update for your device {device_name} (ID: {device_id}).
+
+Current Status: {device_status}
+Last Updated: {last_updated}
+
+View more details at: {dashboard_url}
+
+Regards,
+IoT Device Management System</textarea>
+                            </div>
+                            <div class="flex justify-end space-x-3">
+                                <button class="btn-secondary" onclick="sendTestEmail()">
+                                    <i class="fas fa-paper-plane mr-2"></i> Send Test Email
+                                </button>
+                                <button class="btn-primary" onclick="saveTemplate()">
+                                    <i class="fas fa-save mr-2"></i> Save Template
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Send Device Status to Recipient</h3>
+                        <div class="flex flex-col md:flex-row gap-4 items-center">
+                            <select id="selectDevice" class="rounded border-gray-300 p-2 flex-1">
+                                <option value="">Select Device</option>
+                                {% for device in devices %}
+                                    <option value="{{ device.device_id }}">{{ device.device_name }} ({{ device.device_id }})</option>
+                                {% endfor %}
+                            </select>
+                            <select id="selectRecipient" class="rounded border-gray-300 p-2 flex-1">
+                                <option value="">Select Recipient</option>
+                                {% for recipient in recipients %}
+                                    <option value="{{ recipient.email }}">{{ recipient.email }}</option>
+                                {% endfor %}
+                            </select>
+                            <button id="sendStatusToRecipientBtn" class="btn-primary flex-shrink-0">
+                                <i class="fas fa-paper-plane mr-2"></i> Send Mail
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="controlSection" class="section hidden">
+                    <div class="section-header">
+                        <h2 class="section-title">Device Control</h2>
+                        <p class="text-sm text-gray-500">Monitor and control your IoT devices remotely</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                        <!-- Control Panel -->
+                        <div class="lg:col-span-2">
+                            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                                <div class="p-6">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h3 class="text-lg font-medium text-gray-800">ESP Devices Control Panel</h3>
+                                     
+                                    </div>
+                                    
+                                    <div id="espDeviceList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- ESP devices will be loaded here via JavaScript -->
+                                        <div class="flex justify-center items-center py-8">
+                                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                            <span class="ml-2 text-gray-500">Loading devices...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                     
+                    </div>
+                    
+                 
+                </section>
+
+                <!-- OTA Update Section -->
+                <section id="otaUpdateSection" class="section hidden">
+                    <div class="section-header">
+                        <h2 class="section-title">OTA Updates</h2>
+                        <p class="text-sm text-gray-500">Manage firmware updates for your ESP devices</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-800">ESP Devices - Firmware Status</h3>
+                            <div class="flex gap-2">
+                                <button onclick="checkForUpdates()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                                    <i class="fas fa-sync-alt mr-2"></i>
+                                    Check Updates
+                                </button>
+                                <a href="/ota" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                                    <i class="fas fa-cog mr-2"></i>
+                                    OTA Dashboard
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div id="otaDeviceList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- OTA device cards will be loaded here -->
+                            <div class="flex justify-center items-center py-8 col-span-full">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span class="ml-2 text-gray-500">Loading ESP devices...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Upload Firmware -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Quick Firmware Upload</h3>
+                        <p class="text-sm text-gray-600 mb-4">Upload new firmware versions for your ESP devices. For advanced management, use the Full OTA Dashboard.</p>
+                        
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-600 mb-2">Drag and drop firmware files here, or</p>
+                            <button onclick="window.location.href='/ota'" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                Go to OTA Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+<script>
+(function() {
+    // Utility: Get CSRF token
+    function getCSRFToken() {
+        const el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+
+
+    // Navigation logic
+    function initializeNavigation() {
+        const sections = {
+            dashboardBtn: "dashboardSummary",
+            addDeviceBtn: "addDeviceSection",
+            deviceListBtn: "deviceListSection",
+            deviceDataBtn: "deviceDataSection",
+            mailBtn: "mailSection",
+            controlBtn: "controlSection",
+            otaUpdateBtn: "otaUpdateSection",
+        };
+        function hideAllSections() {
+            Object.values(sections).forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) section.classList.add('hidden');
+            });
+        }
+        function showSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) section.classList.remove('hidden');
+        }
+        Object.entries(sections).forEach(([btnId, sectionId]) => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    hideAllSections();
+                    showSection(sectionId);
+                    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+                    btn.classList.add('active');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+        });
+        // Show dashboard by default
+        hideAllSections();
+        showSection('dashboardSummary');
+        const defaultBtn = document.getElementById('dashboardBtn');
+        if (defaultBtn) defaultBtn.classList.add('active');
+    }
+
+    // Dashboard data refresh
+    function refreshDashboardData() {
+        fetch('/api/devices/status/', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.ok ? response.json() : Promise.reject(response))
+        .then(data => {
+            // Optionally update device statuses here
+        })
+        .catch(() => {});
+        fetch('/api/alerts/unread-count/', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.ok ? response.json() : Promise.reject(response))
+        .then(data => {
+            // Optionally update unread alerts count here
+        })
+        .catch(() => {});
+    }
+
+    // Add Device Form
+    function setupAddDeviceForm() {
+        const addDeviceForm = document.getElementById("addDeviceForm");
+        if (!addDeviceForm) return;
+        addDeviceForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const csrfToken = getCSRFToken();
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Adding...';
+            submitButton.disabled = true;
+            fetch(this.action, {
+                method: "POST",
+                headers: { "X-CSRFToken": csrfToken },
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('success', 'Device added successfully!');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification('error', 'Error adding device: ' + data.error);
+                    submitButton.innerHTML = originalButtonText;
+                    submitButton.disabled = false;
+                }
+            })
+            .catch(() => {
+                showNotification('error', 'An unexpected error occurred');
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+            });
+        });
+    }
+
+    // ESP Device List (Control Panel)
+    function loadEspDevices() {
+        const espDeviceList = document.getElementById("espDeviceList");
+        if (!espDeviceList) return;
+        espDeviceList.innerHTML = `<div class="col-span-full flex justify-center items-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div><span class="ml-2 text-gray-500">Loading devices...</span></div>`;
+        fetch("/api/esp-devices/")
+        .then(response => response.ok ? response.json() : Promise.reject(response))
+        .then(data => {
+            if (!Array.isArray(data) || data.length === 0) {
+                espDeviceList.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-8 animate-fade-in"><i class="fas fa-microchip text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">No ESP devices found.</p><p class="text-sm text-gray-400 mt-1">Add an ESP device to get started.</p></div>`;
+                return;
+            }
+            espDeviceList.innerHTML = '';
+            data.forEach((device, index) => {
+                const deviceCard = document.createElement("div");
+                deviceCard.className = "bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 animate-fade-in cursor-pointer";
+                deviceCard.style.animationDelay = `${index * 50}ms`;
+                deviceCard.dataset.deviceId = device.device_id;
+                deviceCard.onclick = () => window.location.href = `device/${device.device_id}/?from=admin_dashboard`;
+                deviceCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-primary-light text-primary">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-gray-900">${device.device_name}</h4>
+                                <p class="text-xs text-gray-500">${device.device_id}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if device.device_status == 'online' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                                {{ device.device_status|title }}
+                                            </span>
+
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="btn-primary btn-sm flex-1 animate-scale" onclick="event.stopPropagation(); window.location.href = '/device/${device.device_id}/?from=admin_dashboard';"><i class="fas fa-cog mr-1"></i> Control</button>
+                        <button class="btn-secondary btn-sm flex-1 animate-scale" onclick="event.stopPropagation(); sendCommand('${device.device_id}', 'restart', this)"><i class="fas fa-redo-alt mr-1"></i> Restart</button>
+                    </div>
+                `;
+                espDeviceList.appendChild(deviceCard);
+            });
+        })
+        .catch(() => {
+            espDeviceList.innerHTML = `<div class="col-span-full text-center py-8 animate-fade-in"><i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mb-2"></i><p class="text-gray-700">Failed to load devices.</p></div>`;
+        });
+    }
+
+
+    // OTA Update Functions
+    function loadOtaDevices() {
+        const otaDeviceList = document.getElementById("otaDeviceList");
+        if (!otaDeviceList) return;
+        
+        otaDeviceList.innerHTML = `<div class="col-span-full flex justify-center items-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><span class="ml-2 text-gray-500">Loading ESP devices...</span></div>`;
+        
+        fetch("/api/esp-devices/")
+        .then(response => response.ok ? response.json() : Promise.reject(response))
+        .then(data => {
+            if (!Array.isArray(data) || data.length === 0) {
+                otaDeviceList.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-8"><i class="fas fa-microchip text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">No ESP devices found.</p><p class="text-sm text-gray-400 mt-1">Add ESP devices to manage firmware updates.</p></div>`;
+                return;
+            }
+            
+            otaDeviceList.innerHTML = '';
+            data.forEach((device, index) => {
+                const deviceCard = document.createElement("div");
+                deviceCard.className = "bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200";
+                deviceCard.style.animationDelay = `${index * 50}ms`;
+                
+                const statusColor = device.device_status === 'online' ? 'green' : 'red';
+                const statusText = device.device_status === 'online' ? 'Online' : 'Offline';
+                
+                deviceCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-gray-900">${device.device_name}</h4>
+                                <p class="text-xs text-gray-500">${device.device_id}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${statusColor}-100 text-${statusColor}-800">
+                            ${statusText}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>Current Version:</span>
+                            <span class="font-medium">Unknown</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600">
+                            <span>Update Available:</span>
+                            <span class="text-yellow-600">Checking...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs" 
+                                onclick="checkDeviceUpdate('${device.device_id}')" 
+                                ${device.device_status !== 'online' ? 'disabled' : ''}>
+                            <i class="fas fa-sync-alt mr-1"></i> Check Update
+                        </button>
+                        <button class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-xs" 
+                                onclick="viewDeviceOta('${device.device_id}')">
+                            <i class="fas fa-info-circle mr-1"></i> Details
+                        </button>
+                    </div>
+                `;
+                otaDeviceList.appendChild(deviceCard);
+            });
+        })
+        .catch(() => {
+            otaDeviceList.innerHTML = `<div class="col-span-full text-center py-8"><i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mb-2"></i><p class="text-gray-700">Failed to load ESP devices.</p></div>`;
+        });
+    }
+    
+    function checkForUpdates() {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Checking...';
+        button.disabled = true;
+        
+        fetch('/ota/check-updates/', {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Found ${data.updates_available} devices with available updates out of ${data.total_devices} total devices.`);
+                loadOtaDevices(); // Refresh the device list
+            } else {
+                alert('Error checking for updates: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error checking for updates');
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+    
+    function checkDeviceUpdate(deviceId) {
+        alert(`Checking updates for device ${deviceId}. This feature will be implemented in the full OTA dashboard.`);
+    }
+    
+    function viewDeviceOta(deviceId) {
+        window.location.href = `/ota/?device=${deviceId}`;
+    }
+
+    // Main initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeNavigation();
+        setupAddDeviceForm();
+        loadEspDevices();
+        loadOtaDevices();
+        refreshDashboardData();
+        setInterval(refreshDashboardData, 30000);
+    });
+})();
+
+function deleteDevice(deviceId) {
+    if (confirm("Are you sure you want to delete this device?")) {
+        const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+        fetch(`/delete/${deviceId}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/json",
+            },
+            credentials: "same-origin", // <--- required for Django CSRF
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Try to read text if not JSON (to prevent SyntaxError)
+                return response.text().then(text => {
+                    throw new Error(text || response.statusText);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification("success", "Device deleted successfully");
+                const deviceRow = document.querySelector(`#device-${deviceId}`);
+                if (deviceRow) {
+                    deviceRow.style.opacity = 0;
+                    setTimeout(() => deviceRow.remove(), 300);
+                } else {
+                    location.reload();
+                }
+            } else {
+                showNotification("error", "Error deleting device: " + (data.error || "Unknown"));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            showNotification("error", error.message || "Unexpected error");
+        });
+    }
+}
+
+
+// Add AJAX for Send Status Email button
+function showNotification(type, message) {
+    // Simple notification (replace with your notification system if needed)
+    alert(message);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sendBtn = document.getElementById('sendStatusToRecipientBtn');
+    if (sendBtn) {
+        sendBtn.onclick = function() {
+            const deviceId = document.getElementById('selectDevice').value;
+            const recipientEmail = document.getElementById('selectRecipient').value;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            if (!deviceId || !recipientEmail) {
+                alert('Please select both a device and a recipient.');
+                return;
+            }
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+            fetch('/send-device-status-email-to-recipient/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `device_id=${encodeURIComponent(deviceId)}&recipient_email=${encodeURIComponent(recipientEmail)}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Status email sent!');
+                } else {
+                    alert('Failed: ' + (data.error || 'Unknown error'));
+                }
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Send Mail';
+            })
+            .catch(() => {
+                alert('An error occurred.');
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Send Mail';
+            });
+        };
+    }
+});
+</script>
+</body>
+</html>
