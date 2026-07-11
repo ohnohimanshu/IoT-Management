@@ -1,3 +1,6 @@
 venv/
 __pycache__/
 *.pyc
+mosquitto.dbmosquitto/data/
+mosquitto/data/mosquitto.db
+error.log

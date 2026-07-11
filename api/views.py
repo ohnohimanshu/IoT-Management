@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @api_view(['POST'])
 def device_data_upload(request):
     try:
-        device_id = request.data.get('device_id', '').strip()
+        device_id = str(request.data.get('device_id', '')).strip()
         
         # Validate device_id is provided
         if not device_id:

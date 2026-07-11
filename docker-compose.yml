@@ -6,9 +6,6 @@ services:
     build: .
     command: >
       bash -c "
-        chown -R appuser:appuser /app/static &&
-        chown -R appuser:appuser /app/media &&
-        chown -R appuser:appuser /app/logs &&
         python manage.py makemigrations &&
         python manage.py migrate &&
         python manage.py makemigrations ota_update &&
