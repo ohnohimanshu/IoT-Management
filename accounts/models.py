@@ -16,5 +16,12 @@ class CustomUser(AbstractUser):
     ], default='all')
     update_interval = models.IntegerField(default=15)  # in minutes
 
+    def save(self, *args, **kwargs):
+        if self.is_superuser and self.role != 'admin':
+            self.role = 'admin'
+        elif not self.is_superuser and not self.role:
+            self.role = 'user'
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.username

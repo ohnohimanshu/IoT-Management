@@ -193,6 +193,18 @@ def admin_dashboard(request):
         if request.user.role != 'admin':
             return HttpResponseForbidden("Access Denied")
 
+        if request.method == 'POST' and request.POST.get('action') == 'update_user_role':
+            target_user = get_object_or_404(CustomUser, id=request.POST.get('user_id'))
+            new_role = request.POST.get('role')
+            if new_role not in dict(CustomUser.ROLE_CHOICES):
+                messages.error(request, 'Invalid role selected.')
+                return redirect('admin_dashboard')
+
+            target_user.role = new_role
+            target_user.save()
+            messages.success(request, f"{target_user.username} is now a {target_user.get_role_display()}." )
+            return redirect('admin_dashboard')
+
         devices = Device.objects.all()
         users = CustomUser.objects.all()
         recipients = EmailRecipient.objects.all()

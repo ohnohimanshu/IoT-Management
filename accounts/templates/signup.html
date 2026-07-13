@@ -403,28 +403,9 @@
                     <div class="error-message" id="password2-error"></div>
                 </div>
 
-                <div>
-                    <label for="role" class="block input-label">
-                        <i class="fas fa-user-tag mr-2"></i>Account Role
-                    </label>
-                    <select 
-                        id="role" 
-                        name="role" 
-                        class="select-field w-full px-4 py-3 text-white" 
-                        required
-                    >
-                        <option value="">Select your role</option>
-                        <option value="user">
-                            <i class="fas fa-user role-icon"></i>User - Basic Access
-                        </option>
-                        <option value="device-administrator">
-                            <i class="fas fa-cogs role-icon"></i>Device Administrator - Manage Devices
-                        </option>
-                        <option value="admin">
-                            <i class="fas fa-crown role-icon"></i>Admin - Full Access
-                        </option>
-                    </select>
-                    <div class="error-message" id="role-error"></div>
+                <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-gray-100">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    New accounts are created as regular users by default.
                 </div>
 
                 <button type="submit" class="signup-btn w-full py-3 px-4 text-white font-semibold">
@@ -468,8 +449,7 @@
                 username: formData.get('username'),
                 email: formData.get('email'),
                 password: formData.get('password'),
-                password2: formData.get('password2'),
-                role: formData.get('role')
+                password2: formData.get('password2')
             };
 
             // Basic validation
@@ -484,12 +464,6 @@
             if (data.password.length < 8) {
                 document.getElementById('password-error').textContent = 'Password must be at least 8 characters long';
                 document.getElementById('password-error').classList.add('show');
-                hasError = true;
-            }
-
-            if (!data.role) {
-                document.getElementById('role-error').textContent = 'Please select a role';
-                document.getElementById('role-error').classList.add('show');
                 hasError = true;
             }
 

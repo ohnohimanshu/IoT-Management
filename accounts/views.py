@@ -14,14 +14,14 @@ def signup_view(request):
         username = request.POST.get('username')
         email = request.POST.get('email')
         password = request.POST.get('password')
-        role = request.POST.get('role')
+        role = 'user'
         # Check for duplicate username or email
         if CustomUser.objects.filter(username=username).exists():
             return JsonResponse({'error': 'Username already exists'}, status=400)
         if CustomUser.objects.filter(email=email).exists():
             return JsonResponse({'error': 'Email already exists'}, status=400)
 
-        # Create the user
+        # Create the user as a regular user by default
         user = CustomUser.objects.create_user(username=username, email=email, password=password, role=role)
         login(request, user)
 
