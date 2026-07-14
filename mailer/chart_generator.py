@@ -541,3 +541,10 @@ def generate_charts(device_name: str, past_24hrs_data: list) -> Tuple[Optional[B
         logger.error(f"Error generating charts or report data for {device_name}: {str(e)}")
         traceback.print_exc()
         return None, None, None
+
+def generate_daily_summary_chart(device_name: str, device_data: list) -> Optional[BytesIO]:
+    """
+    Generate daily summary chart (returns the metrics chart buffer).
+    """
+    metrics_buffer, _, _ = generate_charts(device_name, device_data)
+    return metrics_buffer

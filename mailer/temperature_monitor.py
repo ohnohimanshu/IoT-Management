@@ -29,12 +29,15 @@ def send_temperature_alert(device, temperature, is_high_temp):
         bool: True if alert was sent successfully
     """
     try:
+        # Determine the high temperature threshold to use
+        high_temp_threshold = device.high_temp_threshold if device.high_temp_threshold is not None else 25.0
+
         # Create appropriate alert message
         if is_high_temp:
-            alert_message = f"Device temperature ({temperature}°C) exceeds threshold (25°C)"
+            alert_message = f"Device temperature ({temperature}°C) exceeds threshold ({high_temp_threshold}°C)"
             current_status = f"Temperature Alert: {temperature}°C"
         else:
-            alert_message = f"Device temperature ({temperature}°C) is now below threshold (25°C)"
+            alert_message = f"Device temperature ({temperature}°C) is now below threshold ({high_temp_threshold}°C)"
             current_status = f"Temperature Normal: {temperature}°C"
 
         # Create alert in database
@@ -168,6 +171,9 @@ def monitor_temperature():
             
             for device in devices:
                 try:
+                    # Skip devices with no last seen data
+                    if not device.last_seen:
+                        continue
                     # Get the latest device data
                     latest_data = device.get_latest_data()
                     if latest_data:

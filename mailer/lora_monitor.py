@@ -66,6 +66,11 @@ class LoraDeviceMonitor:
                 device.last_status = status
                 device.save(update_fields=['last_status'])
 
+                # If the previous state was None/empty, it's just initializing, not a real transition
+                if not current_state:
+                    logger.info(f"Initializing LoRa device {device_id} state to {status} without alerting.")
+                    return
+
                 if status == 'OFF':
                     # Device just went offline - start tracking for 30s delay
                     self.offline_devices[device_id] = {
@@ -224,7 +229,7 @@ class LoraDeviceMonitor:
                     logger.info(f"Adding device {device.device_id} to offline tracking (found during manual check)")
                     self.offline_devices[device.device_id] = {
                         'first_offline': timezone.now(),
-                        'last_notification': timezone.now()
+                        'last_notification': timezone.now()  # Suppress immediate email on server restart
                     }
                 elif current_status == 'ON' and is_tracked:
                     logger.info(f"Removing device {device.device_id} from offline tracking (found online during manual check)")

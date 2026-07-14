@@ -21,9 +21,15 @@ class MailerConfig(AppConfig):
         if not is_server_running:
             return
             
+        # Only start threads in the main worker process when using runserver
+        # (prevents running twice due to Django auto-reloader)
+        import os
+        if 'runserver' in sys.argv and os.environ.get('RUN_MAIN') != 'true':
+            return
+            
         # Import here to avoid circular imports
         from .views import start_background_tasks, stop_background_tasks
-        from .lora_monitor import start_lora_monitor
+        from .lora_monitor import start_monitor as start_lora_monitor
         
         logger.info("🔧 Starting background tasks")
         print("🔧 Starting background tasks")

@@ -31,7 +31,7 @@ from .device_monitor import (
     update_device_status, process_device,
     INACTIVITY_THRESHOLD, EMAIL_RATE_LIMIT
 )
-from .chart_generator import generate_charts
+from .chart_generator import generate_charts, generate_daily_summary_chart
 from .temperature_monitor import monitor_temperature, stop_temperature_monitoring
 
 logger = logging.getLogger(__name__)
@@ -351,13 +351,7 @@ def get_unread_alerts_count(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Authentication required'}, status=401)
     
-    # Get all alerts for the user and count unread ones manually
-    alerts = Alert.objects.filter(user=request.user)
-    unread_count = 0
-    for alert in alerts:
-        if not alert.is_read:
-            unread_count += 1
-    
+    unread_count = Alert.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({'count': unread_count})
 
 @login_required
@@ -386,13 +380,8 @@ def mark_all_alerts_read(request):
     Mark all alerts for the current user as read
     """
     try:
-        # Get all alerts for the user and update them one by one
-        alerts = Alert.objects.filter(user=request.user)
-        for alert in alerts:
-            if not alert.is_read:
-                alert.is_read = True
-                alert.save()
-        
+        # Bulk update all unread alerts in a single query
+        Alert.objects.filter(user=request.user, is_read=False).update(is_read=True)
         return JsonResponse({"success": True})
     except Exception as e:
         logger.error(f"Error marking all alerts as read: {str(e)}")

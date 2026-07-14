@@ -118,11 +118,9 @@ def send_email_alert(device_identifier, current_status, recipient_email):
                 
                 print(f"✅ Email alert sent: {device.device_name} -> {current_status}")
                 
-                # Update the device's last_email_sent timestamp and status
+                # Only update last_email_sent; device_status/last_status are managed by device_monitor
                 device.last_email_sent = timezone.now()
-                device.device_status = current_status.lower()
-                device.last_status = current_status
-                device.save(update_fields=['last_email_sent', 'device_status', 'last_status'])
+                device.save(update_fields=['last_email_sent'])
                 
                 return True
                 

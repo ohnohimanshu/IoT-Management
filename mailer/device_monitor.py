@@ -20,7 +20,7 @@ def verify_device_status(device, now):
     Returns: (new_status, has_changed)
     """
     if not device.last_seen:
-        return "Inactive", device.last_status != "Inactive"
+        return "Inactive", False
     
     seconds = (now - device.last_seen).total_seconds()
     new_status = "Active" if seconds < INACTIVITY_THRESHOLD else "Inactive"
@@ -50,7 +50,7 @@ def update_device_status(device, new_status, now):
                 
                 if last_change:
                     duration = now - last_change.changed_at
-
+            
             device.last_status = new_status
             device.device_status = new_status.lower()  # Update both status fields
             device.status_last_changed = now
@@ -92,6 +92,15 @@ def process_device(device_id):
                     return True
 
                 current_status, has_changed = verify_device_status(device, now)
+                
+                # If last_status is uninitialized, initialize it without sending email
+                if not device.last_status:
+                    logger.info(f"Initializing status for {device.device_name} to {current_status}")
+                    device.last_status = current_status
+                    device.device_status = current_status.lower()
+                    device.status_last_changed = now
+                    device.save(update_fields=['last_status', 'device_status', 'status_last_changed'])
+                    return True
                 
                 # If status is same as last_status, check if there's a pending status that should be cleared
                 if not has_changed:
