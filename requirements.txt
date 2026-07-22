@@ -1,4 +1,4 @@
-# ==========================
+
 # Django and Database
 # ==========================
 Django>=3.2,<4.0             # LTS version compatible with djongo
