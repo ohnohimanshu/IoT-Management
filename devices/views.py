@@ -18,8 +18,8 @@ from .models import Device, PinConfig, PinToggleLog, ScheduledCommand
 from api.models import DeviceData
 from .serializers import DeviceSerializer
 from accounts.models import CustomUser
-from mailer.models import EmailRecipient, Alert
-from mailer.forms import EmailRecipientForm
+from mailer.models import EmailRecipient, Alert, MailerConfiguration
+from mailer.forms import EmailRecipientForm, MailerConfigurationForm
 from .forms import GlobalIntervalForm, DeviceForm
 from .services import DeviceService
 
@@ -150,11 +150,14 @@ def device_admin_dashboard(request):
             except Exception as e:
                 logger.error(f"Error setting up global interval form: {str(e)}")
 
+        mailer_config_form = MailerConfigurationForm(instance=MailerConfiguration.get_config()) if request.user.role == 'admin' else None
+
         context = {
             'devices': devices,
             'users': users,
             'recipients': recipients,
             'form': form,
+            'mailer_config_form': mailer_config_form,
             'global_interval_form': global_interval_form,
             'recent_alerts': recent_alerts,
             'alerts_count': alerts_count,
@@ -234,11 +237,14 @@ def admin_dashboard(request):
             email_recipient.save()
             return redirect('admin_dashboard')
 
+        mailer_config_form = MailerConfigurationForm(instance=MailerConfiguration.get_config())
+
         context = {
             'devices': devices,
             'users': users,
             'recipients': recipients,
             'form': form,
+            'mailer_config_form': mailer_config_form,
             'recent_alerts': recent_alerts,
             'total_alerts': total_alerts,
             'active_devices_count': active_devices,

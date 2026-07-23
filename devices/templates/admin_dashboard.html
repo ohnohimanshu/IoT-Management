@@ -1327,31 +1327,112 @@
                         <!-- Email Settings -->
                         <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col gap-6">
                             <div>
-                                <h3 class="text-lg font-medium text-gray-900 mb-4">Email Settings</h3>
-                                <form id="emailSettingsForm" method="post" action="{% url 'set_global_interval' %}" class="space-y-4">
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Mailer Timing Settings</h3>
+                                <p class="text-sm text-gray-500 mb-4">All runtime values are stored internally in seconds. Choose seconds, minutes, or hours here and the system converts them automatically.</p>
+                                {% if mailer_config_form %}
+                                <form method="post" action="{% url 'mailer_configuration' %}" class="space-y-6">
                                     {% csrf_token %}
-                                    <div class="form-group">
-                                        <label for="interval" class="block text-sm font-medium text-gray-700">Email Interval (hours)</label>
-                                        <input type="number" id="interval" name="interval" min="1" max="24" value="{{ current_interval }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Device Status Monitor</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.inactivity_threshold_value.label }}</label>
+                                                {{ mailer_config_form.inactivity_threshold_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.inactivity_threshold_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.inactivity_threshold_unit }}
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.email_rate_limit_value.label }}</label>
+                                                {{ mailer_config_form.email_rate_limit_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.email_rate_limit_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.email_rate_limit_unit }}
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.status_confirmation_wait_value.label }}</label>
+                                                {{ mailer_config_form.status_confirmation_wait_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.status_confirmation_wait_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.status_confirmation_wait_unit }}
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.monitor_interval_value.label }}</label>
+                                                {{ mailer_config_form.monitor_interval_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.monitor_interval_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.monitor_interval_unit }}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="notification_type" class="block text-sm font-medium text-gray-700">Notification Type</label>
-                                        <select id="notification_type" name="notification_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
-                                            <option value="all">All Updates</option>
-                                            <option value="status_change">Status Changes Only</option>
-                                            <option value="critical">Critical Alerts Only</option>
-                                        </select>
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Temperature Monitor</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.temperature_check_interval_value.label }}</label>
+                                                {{ mailer_config_form.temperature_check_interval_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.temperature_check_interval_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.temperature_check_interval_unit }}
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.temperature_alert_interval_value.label }}</label>
+                                                {{ mailer_config_form.temperature_alert_interval_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.temperature_alert_interval_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.temperature_alert_interval_unit }}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center">
-                                        <input type="checkbox" id="send_immediate" name="send_immediate" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
-                                        <label for="send_immediate" class="ml-2 block text-sm text-gray-700">Send immediate alerts for critical events</label>
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-900 mb-3">LoRa Monitor</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.lora_check_interval_value.label }}</label>
+                                                {{ mailer_config_form.lora_check_interval_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.lora_check_interval_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.lora_check_interval_unit }}
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">{{ mailer_config_form.lora_notification_interval_value.label }}</label>
+                                                {{ mailer_config_form.lora_notification_interval_value }}
+                                                <p class="mt-1 text-xs text-gray-500">{{ mailer_config_form.lora_notification_interval_value.help_text }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Unit</label>
+                                                {{ mailer_config_form.lora_notification_interval_unit }}
+                                            </div>
+                                        </div>
                                     </div>
+                                    {% if mailer_config_form.errors %}
+                                    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+                                        Please correct the timing configuration errors and save again.
+                                    </div>
+                                    {% endif %}
                                     <div class="flex justify-end gap-2">
                                         <button type="submit" class="btn-primary">
-                                            <i class="fas fa-save mr-2"></i> Save Settings
+                                            <i class="fas fa-save mr-2"></i> Save Mailer Settings
                                         </button>
                                     </div>
                                 </form>
+                                {% else %}
+                                <p class="text-sm text-gray-500">Mailer settings are available to admins only.</p>
+                                {% endif %}
                             </div>
                         </div>
                         <!-- Recipients Management -->

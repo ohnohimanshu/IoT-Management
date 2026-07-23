@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.template.loader import render_to_string
@@ -29,10 +30,12 @@ from .email_service import send_email_alert
 from .device_monitor import (
     monitor_device_status, verify_device_status, 
     update_device_status, process_device,
-    INACTIVITY_THRESHOLD, EMAIL_RATE_LIMIT
+    get_config_values
 )
 from .chart_generator import generate_charts, generate_daily_summary_chart
 from .temperature_monitor import monitor_temperature, stop_temperature_monitoring
+from .forms import MailerConfigurationForm
+from .models import MailerConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,25 @@ def stop_background_tasks():
     
     # Add other task stopping logic here if needed
     logger.info("All background tasks stopped")
+
+
+@login_required
+def mailer_configuration_view(request):
+    """Admin-only view to update runtime mailer timing settings."""
+    if request.user.role != 'admin':
+        return JsonResponse({'success': False, 'error': 'Access Denied'}, status=403)
+
+    config = MailerConfiguration.get_config()
+    form = MailerConfigurationForm(request.POST or None, instance=config)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Mailer timing settings updated successfully.')
+        else:
+            messages.error(request, 'Please correct the mailer timing settings form errors.')
+
+    return redirect('admin_dashboard')
 
 # Function to schedule daily summary emails
 def schedule_daily_summary():
@@ -119,6 +141,8 @@ def send_device_status_email(request, device_id):
         if not recipients:
             # If no recipients found, use device's email as fallback
             recipients = [device.email]
+
+        inactivity_threshold, email_rate_limit, _, _ = get_config_values()
         
         # Determine current status based on last_seen timestamp
         current_time = timezone.now()
@@ -126,7 +150,7 @@ def send_device_status_email(request, device_id):
             current_status = "Inactive"
         else:
             time_diff = (current_time - device.last_seen).total_seconds()
-            current_status = "Active" if time_diff < INACTIVITY_THRESHOLD else "Inactive"
+            current_status = "Active" if time_diff < inactivity_threshold else "Inactive"
         
         # Update device status if needed
         if device.last_status != current_status:
@@ -162,7 +186,7 @@ def send_device_status_email(request, device_id):
         can_send_email = True
         if device.last_email_sent:
             time_since_last = (current_time - device.last_email_sent).total_seconds()
-            can_send_email = time_since_last >= EMAIL_RATE_LIMIT
+            can_send_email = time_since_last >= email_rate_limit
             
         if not can_send_email:
             logger.info(f"⏳ Email rate limit in effect for {device.device_name}. Last email sent at {format_timestamp(device.last_email_sent)}")
@@ -399,13 +423,16 @@ def send_device_status_email_to_recipient(request):
             device = Device.objects.get(device_id=device_id)
         except Device.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Device not found.'})
+
+        inactivity_threshold, _, _, _ = get_config_values()
+
         # Determine status as in your existing view
         current_time = timezone.now()
         if not device.last_seen:
             current_status = "Inactive"
         else:
             time_diff = (current_time - device.last_seen).total_seconds()
-            current_status = "Active" if time_diff < INACTIVITY_THRESHOLD else "Inactive"
+            current_status = "Active" if time_diff < inactivity_threshold else "Inactive"
         # Send email
         from .email_service import send_email_alert
         success = send_email_alert(device.device_id, current_status, recipient_email)

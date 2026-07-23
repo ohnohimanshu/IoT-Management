@@ -5,25 +5,32 @@ from django.utils import timezone
 from django.db import transaction
 from devices.models import Device, DeviceStatusHistory
 from .email_service import send_email_alert
+from .models import MailerConfiguration
 
 logger = logging.getLogger(__name__)
 
-# Constants
-INACTIVITY_THRESHOLD = 30  # Seconds before a device is considered inactive
-EMAIL_RATE_LIMIT = 60  # Minimum seconds between emails for the same device
-STATUS_CONFIRMATION_WAIT = 90  # Wait 90 seconds to confirm status change before sending email
-MONITOR_INTERVAL = 30  # How often to run the monitoring loop
+def get_config_values():
+    """Get current configuration values"""
+    config = MailerConfiguration.get_config()
+    return (
+        config.inactivity_threshold,
+        config.email_rate_limit,
+        config.status_confirmation_wait,
+        config.monitor_interval
+    )
 
 def verify_device_status(device, now):
     """
     Determine the current status of a device based on last_seen timestamp
     Returns: (new_status, has_changed)
     """
+    inactivity_threshold, _, _, _ = get_config_values()
+    
     if not device.last_seen:
         return "Inactive", False
     
     seconds = (now - device.last_seen).total_seconds()
-    new_status = "Active" if seconds < INACTIVITY_THRESHOLD else "Inactive"
+    new_status = "Active" if seconds < inactivity_threshold else "Inactive"
     
     # Make sure we detect changes in both directions
     has_changed = new_status != device.last_status
@@ -35,6 +42,7 @@ def update_device_status(device, new_status, now):
     """
     Update the device status in the database and create a status history record
     """
+    inactivity_threshold, _, _, _ = get_config_values()
     try:
         with transaction.atomic():
             device.refresh_from_db()
@@ -64,7 +72,7 @@ def update_device_status(device, new_status, now):
                 new_status=new_status,
                 changed_at=now,
                 duration=duration,
-                reason=f"Status change detected after {INACTIVITY_THRESHOLD}s threshold",
+                reason=f"Status change detected after {inactivity_threshold}s threshold",
                 is_confirmed=True
             )
             print(f"🔄 Status updated for {device.device_name}: {previous} -> {new_status}")
@@ -79,6 +87,7 @@ def process_device(device_id):
     """
     max_retries = 3
     retry_delay = 1  # seconds
+    _, email_rate_limit, status_confirmation_wait, _ = get_config_values()
     
     for attempt in range(max_retries):
         try:
@@ -117,10 +126,10 @@ def process_device(device_id):
                 
                 # Check if there's already a pending status change
                 if device.pending_status == current_status:
-                    # Same pending status - check if it's been stable for STATUS_CONFIRMATION_WAIT seconds
+                    # Same pending status - check if it's been stable for status_confirmation_wait seconds
                     time_pending = (now - device.pending_status_time).total_seconds()
                     
-                    if time_pending >= STATUS_CONFIRMATION_WAIT:
+                    if time_pending >= status_confirmation_wait:
                         # RE-VERIFY status one final time before sending email
                         device.refresh_from_db()  # Get latest data from database
                         current_status_recheck, _ = verify_device_status(device, now)
@@ -141,7 +150,7 @@ def process_device(device_id):
                         # First send the email notification (BEFORE updating status in DB)
                         time_since_last = (now - device.last_email_sent).total_seconds() if device.last_email_sent else float('inf')
                         
-                        if time_since_last >= EMAIL_RATE_LIMIT:
+                        if time_since_last >= email_rate_limit:
                             # Force email sending with explicit logging
                             logger.info(f"⚠️ Attempting to send email for {device.device_name} → {current_status}")
                             print(f"⚠️ Attempting to send email for {device.device_name} → {current_status} to {device.email}")
@@ -156,8 +165,8 @@ def process_device(device_id):
                                 logger.info(f"📧 Email sending {'successful' if email_success else 'FAILED'}")
                                 print(f"📧 Email sending {'successful' if email_success else 'FAILED'}")
                         else:
-                            logger.info(f"Email rate limited for {device.device_name} ({time_since_last:.1f}s < {EMAIL_RATE_LIMIT}s)")
-                            print(f"Email rate limited for {device.device_name} ({time_since_last:.1f}s < {EMAIL_RATE_LIMIT}s)")
+                            logger.info(f"Email rate limited for {device.device_name} ({time_since_last:.1f}s < {email_rate_limit}s)")
+                            print(f"Email rate limited for {device.device_name} ({time_since_last:.1f}s < {email_rate_limit}s)")
                         
                         # Then update status in database
                         update_device_status(device, current_status, now)
@@ -167,7 +176,7 @@ def process_device(device_id):
                         device.pending_status_time = None
                         device.save(update_fields=['pending_status', 'pending_status_time'])
                     else:
-                        logger.debug(f"Waiting for confirmation: {device.device_name} {current_status} for {time_pending:.1f}s/{STATUS_CONFIRMATION_WAIT}s")
+                        logger.debug(f"Waiting for confirmation: {device.device_name} {current_status} for {time_pending:.1f}s/{status_confirmation_wait}s")
                 else:
                     # New pending status or different pending status - update and reset timer
                     logger.info(f"Setting pending status for {device.device_name}: {current_status}")
@@ -200,6 +209,7 @@ def monitor_device_status():
     print("🚀 Background Task Running: Device Status Monitor")
     
     while True:
+        _, _, _, monitor_interval = get_config_values()
         start = time.time()
         success, fail = 0, 0
         
@@ -218,5 +228,5 @@ def monitor_device_status():
         
         # Wait for next monitoring interval, accounting for processing time
         elapsed = time.time() - start
-        wait_time = max(0, MONITOR_INTERVAL - elapsed)
+        wait_time = max(0, monitor_interval - elapsed)
         time.sleep(wait_time)

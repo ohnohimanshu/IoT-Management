@@ -3,7 +3,7 @@ import time
 from django.utils import timezone
 from devices.models import Device
 from .email_service import send_temperature_email_alert
-from .models import Alert
+from .models import Alert, MailerConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +12,14 @@ _monitoring_active = True
 
 # Dictionary to track devices that are currently in high temperature state
 _high_temp_devices = {}
+
+def get_temp_config_values():
+    """Get current temperature monitor configuration values"""
+    config = MailerConfiguration.get_config()
+    return (
+        config.temperature_check_interval,
+        config.temperature_alert_interval
+    )
 
 def stop_temperature_monitoring():
     """Stop the temperature monitoring thread"""
@@ -76,6 +84,7 @@ def check_device_temperature(device_data):
     Returns:
         bool: True if alert was sent, False otherwise
     """
+    _, temperature_alert_interval = get_temp_config_values()
     try:
         # Extract temperature from device data
         temperature = device_data.get('temperature')
@@ -108,8 +117,8 @@ def check_device_temperature(device_data):
                 if device_id not in _high_temp_devices:
                     _high_temp_devices[device_id] = timezone.now()
                     return send_temperature_alert(device, temperature, True)
-                # If device was in high temp state, check if 5 minutes have passed
-                elif (timezone.now() - _high_temp_devices[device_id]).total_seconds() >= 300:
+                # If device was in high temp state, check if temperature_alert_interval has passed
+                elif (timezone.now() - _high_temp_devices[device_id]).total_seconds() >= temperature_alert_interval:
                     _high_temp_devices[device_id] = timezone.now()
                     return send_temperature_alert(device, temperature, True)
             else:
@@ -165,6 +174,7 @@ def monitor_temperature():
     logger.info("Starting temperature monitoring thread")
     
     while _monitoring_active:
+        temperature_check_interval, _ = get_temp_config_values()
         try:
             # Get all active devices
             devices = Device.objects.filter(device_status='active')
@@ -183,8 +193,8 @@ def monitor_temperature():
                     logger.error(f"Error processing device {device.device_name}: {str(e)}")
                     continue
             
-            # Sleep for 5 minutes before next check
-            time.sleep(300)
+            # Sleep for configured check interval
+            time.sleep(temperature_check_interval)
             
         except Exception as e:
             logger.error(f"Error in temperature monitoring thread: {str(e)}")

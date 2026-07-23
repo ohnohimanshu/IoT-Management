@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db.models import Q
 from devices.models import Device
 from .email_service import send_lora_power_status_email, send_email_alert
+from .models import MailerConfiguration
 import logging
 import threading
 
@@ -13,10 +14,16 @@ class LoraDeviceMonitor:
     def __init__(self):
         self.offline_devices = {}  # Dictionary to track offline devices and their last notification time
         self.inactive_devices = {}  # Dictionary to track devices not sending data
-        self.check_interval = 30   # Check every 30 seconds
-        self.notification_interval = 300  # Send notification every 5 minutes (300 seconds)
-        self.inactivity_threshold = 30  # Seconds before a device is considered inactive
-        self.inactivity_confirmation_wait = 90  # Wait 90 seconds before sending inactivity email
+        self.load_config()
+        
+    def load_config(self):
+        """Load configuration from MailerConfiguration model"""
+        config = MailerConfiguration.get_config()
+        self.check_interval = config.lora_check_interval
+        self.notification_interval = config.lora_notification_interval
+        # Also use the same inactivity threshold and confirmation wait as device monitor for consistency
+        self.inactivity_threshold = config.inactivity_threshold
+        self.inactivity_confirmation_wait = config.status_confirmation_wait
 
     def check_device_status(self, device_data):
         """
@@ -99,9 +106,9 @@ class LoraDeviceMonitor:
 
                     logger.info(f"Device {device_id} is still OFF. Offline duration: {time_since_offline:.1f}s. Last notification sent at: {last_notification}")
 
-                    # Check if 30 seconds have passed to send the initial OFF email
-                    if time_since_offline >= 30 and last_notification is None:
-                        logger.info(f"Device {device_id} has been OFF for >= 30s and initial email not sent. Sending now.")
+                    # Check if inactivity threshold has passed to send the initial OFF email
+                    if time_since_offline >= self.inactivity_threshold and last_notification is None:
+                        logger.info(f"Device {device_id} has been OFF for >= {self.inactivity_threshold}s and initial email not sent. Sending now.")
                         send_lora_power_status_email(device_id, 'OFF', device.email)
                         self.offline_devices[device_id]['last_notification'] = current_time
                         logger.info(f"Initial OFF email sent for device {device_id}. Updated last_notification.")
@@ -261,7 +268,7 @@ class LoraDeviceMonitor:
                     if time_since_last_seen > self.inactivity_threshold:
                         if device_id not in self.inactive_devices:
                             # First time detecting inactivity - start tracking but don't send email yet
-                            logger.info(f"Device {device_id} not sending data for {time_since_last_seen:.1f}s. Starting 60s confirmation tracking.")
+                            logger.info(f"Device {device_id} not sending data for {time_since_last_seen:.1f}s. Starting {self.inactivity_confirmation_wait}s confirmation tracking.")
                             self.inactive_devices[device_id] = {
                                 'first_inactive': current_time,
                                 'last_notification': None  # No notification sent yet
@@ -273,13 +280,13 @@ class LoraDeviceMonitor:
                             last_notification = inactive_data['last_notification']
                             time_since_inactive = (current_time - first_inactive).total_seconds()
                             
-                            # Send initial notification only after 90 seconds of inactivity
+                            # Send initial notification only after configured inactivity confirmation wait
                             if last_notification is None and time_since_inactive >= self.inactivity_confirmation_wait:
-                                logger.info(f"Device {device_id} has been inactive for {time_since_inactive:.1f}s (>= 60s). Sending initial notification.")
+                                logger.info(f"Device {device_id} has been inactive for {time_since_inactive:.1f}s (>= {self.inactivity_confirmation_wait}s). Sending initial notification.")
                                 send_email_alert(device_id, "Inactive", device.email)
                                 self.inactive_devices[device_id]['last_notification'] = current_time
                             elif last_notification is None and time_since_inactive < self.inactivity_confirmation_wait:
-                                logger.debug(f"Device {device_id} inactive for {time_since_inactive:.1f}s. Waiting for 60s confirmation ({self.inactivity_confirmation_wait - time_since_inactive:.1f}s remaining).")
+                                logger.debug(f"Device {device_id} inactive for {time_since_inactive:.1f}s. Waiting for confirmation ({self.inactivity_confirmation_wait - time_since_inactive:.1f}s remaining).")
                             
                             # Send periodic notifications every notification_interval seconds (after initial email sent)
                             elif last_notification is not None and \
@@ -298,19 +305,19 @@ class LoraDeviceMonitor:
                                 if 'active_since' not in inactive_data:
                                     # First time seeing device active - start tracking
                                     inactive_data['active_since'] = current_time
-                                    logger.info(f"Device {device_id} is active. Starting 30s stability check before sending recovery email.")
+                                    logger.info(f"Device {device_id} is active. Starting {self.inactivity_threshold}s stability check before sending recovery email.")
                                 else:
-                                    # Check if device has been stable for 30 seconds
+                                    # Check if device has been stable for the configured threshold
                                     time_active = (current_time - inactive_data['active_since']).total_seconds()
-                                    if time_active >= 30:
+                                    if time_active >= self.inactivity_threshold:
                                         logger.info(f"Device {device_id} stable for {time_active:.1f}s. Sending 'Active' email.")
                                         send_email_alert(device_id, "Active", device.email)
                                         del self.inactive_devices[device_id]
                                     else:
-                                        logger.debug(f"Device {device_id} active for {time_active:.1f}s. Waiting for 30s stability.")
+                                        logger.debug(f"Device {device_id} active for {time_active:.1f}s. Waiting for {self.inactivity_threshold}s stability.")
                             else:
                                 # Device came back online before we ever sent an inactivity alert
-                                logger.info(f"Device {device_id} came back online before 90s confirmation. No alert was sent.")
+                                logger.info(f"Device {device_id} came back online before {self.inactivity_confirmation_wait}s confirmation. No alert was sent.")
                                 del self.inactive_devices[device_id]
         except Exception as e:
             logger.error(f"Error checking device inactivity: {str(e)}")
@@ -324,6 +331,9 @@ class LoraDeviceMonitor:
         
         while True:
             try:
+                # Reload config each loop to pick up changes
+                self.load_config()
+                
                 # Check for device inactivity
                 self.check_device_inactivity()
                 
